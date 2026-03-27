@@ -12,12 +12,47 @@ def _collection_name(book_id: str) -> str:
     return f"book_{book_id}"
 
 
+def _to_chroma_metadata(metadata: dict) -> dict:
+    # Chroma accepts only scalar metadata values.
+    page_numbers = metadata.get("page_numbers", [])
+    if isinstance(page_numbers, list):
+        page_numbers_value = ",".join(str(x) for x in page_numbers)
+    else:
+        page_numbers_value = str(page_numbers)
+
+    return {
+        "book_id": metadata.get("book_id", ""),
+        "chapter": metadata.get("chapter", "Unknown"),
+        "section": metadata.get("section", "Unknown"),
+        "page_numbers": page_numbers_value,
+        "chunk_index": int(metadata.get("chunk_index", 0)),
+        "content_type": metadata.get("content_type", "text"),
+    }
+
+
+def _from_chroma_metadata(metadata: dict) -> dict:
+    raw_pages = metadata.get("page_numbers", "")
+    if isinstance(raw_pages, str) and raw_pages.strip():
+        page_numbers = [int(x) for x in raw_pages.split(",") if x.strip().isdigit()]
+    else:
+        page_numbers = []
+
+    return {
+        "book_id": metadata.get("book_id", ""),
+        "chapter": metadata.get("chapter", "Unknown"),
+        "section": metadata.get("section", "Unknown"),
+        "page_numbers": page_numbers,
+        "chunk_index": int(metadata.get("chunk_index", 0)),
+        "content_type": metadata.get("content_type", "text"),
+    }
+
+
 def add_chunks(book_id: str, chunks: list[dict], embeddings: list[list[float]]) -> None:
     collection = client.get_or_create_collection(name=_collection_name(book_id), metadata={"hnsw:space": "cosine"})
     collection.add(
         ids=[c["id"] for c in chunks],
         documents=[c["content"] for c in chunks],
-        metadatas=[c["metadata"] for c in chunks],
+        metadatas=[_to_chroma_metadata(c["metadata"]) for c in chunks],
         embeddings=embeddings,
     )
 
@@ -49,7 +84,7 @@ def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
             {
                 "id": ids[i],
                 "content": doc,
-                "metadata": metas[i],
+                "metadata": _from_chroma_metadata(metas[i]),
                 "score": score,
             }
         )
