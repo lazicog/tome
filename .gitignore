@@ -21,6 +21,9 @@ out/
 # Data (local runtime)
 data/
 uploads/
+backend/data/chroma/
+backend/data/uploads/
+backend/data/books.json
 
 # IDE
 .vscode/

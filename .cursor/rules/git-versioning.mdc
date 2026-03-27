@@ -34,9 +34,9 @@ refactor(api): extract pagination into shared dependency
 ## Branching
 
 - `master` is the main branch -- always deployable
-- Feature branches: `feat/short-name` (e.g., `feat/pdf-pipeline`, `feat/quiz-agent`)
-- Bug fixes: `fix/short-name`
-- Create a branch for any work spanning multiple commits; merge via PR
+- Solo mode (current default): direct commits to `master` are allowed for speed
+- Team mode (when contributors join): use feature branches `feat/short-name` and `fix/short-name`, then merge via PR
+- If a risky change is expected (schema migration, major refactor), prefer a feature branch even in solo mode
 
 ## Never Commit
 

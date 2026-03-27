@@ -32,7 +32,8 @@
 
 ## Next steps
 
-- Initialize git repository and make first commit with all rules, skills, and docs
-- Begin Phase 1: project scaffolding (FastAPI backend, Next.js frontend, Docker setup)
-- Build the PDF processing pipeline (upload, extract, chunk, embed, store)
-- Wire up the basic Tutor agent with RAG retrieval and streaming chat
+- Completed: initialized git, created `lazicog/tome`, and pushed foundation commits
+- Completed: Phase 1 scaffolding for backend and frontend
+- Completed: PDF processing pipeline (upload, extract, chunk, embed, store)
+- Completed: basic Tutor chat endpoint with SSE token streaming and source chunk metadata
+- Next: Phase 2 multi-agent routing (router + specialized agents)

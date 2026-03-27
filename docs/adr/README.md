@@ -33,3 +33,4 @@ What are the trade-offs? List both positives and negatives.
 |-----|-------|--------|------|
 | [0001](0001-langchain-over-litellm.md) | Use LangChain Chat Models over LiteLLM | Accepted | 2026-03-27 |
 | [0002](0002-langgraph-for-orchestration.md) | Use LangGraph for Agent Orchestration | Accepted | 2026-03-27 |
+| [0003](0003-phase1-local-storage-and-sse.md) | Phase 1 uses local metadata storage and SSE chat streaming | Accepted | 2026-03-27 |
