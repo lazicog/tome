@@ -1,0 +1,54 @@
+---
+description: Git workflow, commit conventions, and versioning standards for the Tome project
+alwaysApply: true
+---
+
+# Git & Versioning Standards
+
+## Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+type(scope): short description
+
+Optional longer body explaining WHY, not what.
+```
+
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`
+Scopes: `agents`, `rag`, `api`, `frontend`, `config`, `docker` (optional, use when change is scoped)
+
+```
+feat(rag): add hybrid retrieval with BM25 reranking
+fix(agents): handle missing chunks in tutor node fallback
+docs: add ADR-0003 for ChromaDB collection strategy
+refactor(api): extract pagination into shared dependency
+```
+
+## Commit Granularity
+
+- One logical unit of work per commit (a feature, a fix, a refactor -- not a mix)
+- If a feature touches backend + frontend, that's still one commit if they're coupled
+- Never commit half-working code; each commit should leave the project in a runnable state
+
+## Branching
+
+- `master` is the main branch -- always deployable
+- Feature branches: `feat/short-name` (e.g., `feat/pdf-pipeline`, `feat/quiz-agent`)
+- Bug fixes: `fix/short-name`
+- Create a branch for any work spanning multiple commits; merge via PR
+
+## Never Commit
+
+- `.env` files or API keys (use `.env.example` for templates)
+- Uploaded PDFs or user data (`uploads/`, `data/`)
+- Large binary files
+- `node_modules/`, `__pycache__/`, `.venv/`
+
+## Versioning
+
+Semantic versioning for releases: `vMAJOR.MINOR.PATCH`
+- `v0.x.x` during initial development (pre-1.0)
+- Bump MINOR for new features, PATCH for fixes
+- Tag releases: `git tag v0.1.0`
+- Each release gets a dated section in `CHANGELOG.md` moved from `[Unreleased]`
