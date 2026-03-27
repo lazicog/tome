@@ -34,4 +34,4 @@ This directory holds implementation specs for non-trivial work in Tome.
 
 ## Index
 
-- Add specs here as they are created.
+- [2026-03-28-phase2-mvp-router-3-agents.md](2026-03-28-phase2-mvp-router-3-agents.md) - Phase 2 MVP: router + Tutor/Example/Context agents
