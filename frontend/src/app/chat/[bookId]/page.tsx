@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sources, setSources] = useState<string>("");
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   const send = async () => {
     if (!input.trim()) return;
@@ -21,14 +22,21 @@ export default function ChatPage() {
     setMessages(next);
     setInput("");
     setSending(true);
+    setError("");
 
     const res = await fetch(`${API}/books/${params.bookId}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: userMsg.content, chat_history: next.slice(0, -1) }),
     });
+    if (!res.ok) {
+      setError(await res.text());
+      setSending(false);
+      return;
+    }
 
     if (!res.body) {
+      setError("No response stream returned by server.");
       setSending(false);
       return;
     }
@@ -48,12 +56,13 @@ export default function ChatPage() {
       buffer = frames.pop() ?? "";
 
       for (const frame of frames) {
-        const eventLine = frame.split("\n").find((line) => line.startsWith("event: "));
-        const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
-        if (!eventLine || !dataLine) continue;
+        const lines = frame.split("\n");
+        const eventLine = lines.find((line) => line.startsWith("event: "));
+        const dataLines = lines.filter((line) => line.startsWith("data: "));
+        if (!eventLine || dataLines.length === 0) continue;
 
         const event = eventLine.replace("event: ", "");
-        const data = dataLine.replace("data: ", "");
+        const data = dataLines.map((line) => line.replace("data: ", "")).join("\n");
 
         if (event === "token") {
           assistantText += JSON.parse(data) as string;
@@ -96,6 +105,7 @@ export default function ChatPage() {
           {sending ? "Thinking..." : "Send"}
         </button>
       </div>
+      {error ? <p style={{ color: "#fca5a5" }}>{error}</p> : null}
 
       {sources ? (
         <pre style={{ marginTop: "1rem", whiteSpace: "pre-wrap", background: "#111827", padding: "0.8rem", borderRadius: 8 }}>

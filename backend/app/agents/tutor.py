@@ -17,6 +17,13 @@ Context:
 """
 
 
+def _sse_event(event: str, payload: str | list[dict]) -> str:
+    encoded = json.dumps(payload)
+    lines = encoded.splitlines() or [encoded]
+    data_lines = "".join(f"data: {line}\n" for line in lines)
+    return f"event: {event}\n{data_lines}\n"
+
+
 def _history_to_messages(history: list[ChatMessage]) -> list[HumanMessage | AIMessage]:
     output: list[HumanMessage | AIMessage] = []
     for msg in history:
@@ -55,7 +62,7 @@ async def stream_tutor_answer(book_id: str, message: str, history: list[ChatMess
     async for chunk in llm.astream(prompt_messages):
         token = chunk.content
         if token:
-            yield f"event: token\ndata: {json.dumps(token)}\n\n"
+            yield _sse_event("token", token)
 
-    yield f"event: sources\ndata: {json.dumps(sources)}\n\n"
-    yield "event: done\ndata: \n\n"
+    yield _sse_event("sources", sources)
+    yield _sse_event("done", "")

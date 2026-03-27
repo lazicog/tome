@@ -10,8 +10,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const refresh = async () => {
-    setLoading(true);
+  const refresh = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
     setError("");
     try {
       const data = await listBooks();
@@ -19,13 +21,26 @@ export default function HomePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load books");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     void refresh();
   }, []);
+
+  useEffect(() => {
+    const hasInFlight = books.some((book) => book.status === "queued" || book.status === "processing");
+    if (!hasInFlight) {
+      return;
+    }
+    const timer = setInterval(() => {
+      void refresh(true);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [books]);
 
   const onUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -58,9 +73,13 @@ export default function HomePage() {
             <p style={{ margin: "0 0 0.4rem", opacity: 0.8 }}>
               status: {book.status} | chunks: {book.chunks}
             </p>
-            <Link href={`/chat/${book.id}`} style={{ color: "#93c5fd" }}>
-              Open chat
-            </Link>
+            {book.status === "ready" ? (
+              <Link href={`/chat/${book.id}`} style={{ color: "#93c5fd" }}>
+                Open chat
+              </Link>
+            ) : (
+              <span style={{ color: "#94a3b8" }}>Chat available when ready</span>
+            )}
           </article>
         ))}
       </div>

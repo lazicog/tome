@@ -1,4 +1,4 @@
-# Tome Session Handoff
+﻿# Tome Session Handoff
 
 Use this file as the startup context when resuming work with the agent.
 
@@ -10,27 +10,26 @@ At the start of the next session, say:
 
 ## Current project status
 
-- Project: `tome` (`https://github.com/lazicog/tome`)
+- Project: `tome` ([https://github.com/lazicog/tome](https://github.com/lazicog/tome))
 - Branch: `master`
-- Last local commit: `df41d41`
-- Working tree was clean at session end
-- Local branch was ahead of `origin/master` by 1 commit (not pushed yet at session end)
+- Latest pushed commit at handoff start: `856fec6`
+- Workflow: solo mode direct commits to `master`
 
 ## What is completed
 
-### Foundation
+### Foundation and conventions
 
-- Cursor rules and skills are in place
-- Documentation system is in place:
+- Cursor rules and skills are set up
+- Documentation system is active:
   - ADRs in `docs/adr/`
   - Devlog in `docs/devlog/`
   - Changelog in `CHANGELOG.md`
 
-### Phase 1 implementation (scaffolded)
+### Phase 1 (scaffold + hardening)
 
 - Backend created under `backend/app/`
   - FastAPI app in `backend/app/main.py`
-  - Routes:
+  - Endpoints:
     - `GET /api/health`
     - `GET /api/books`
     - `POST /api/books` (PDF upload + background processing)
@@ -44,7 +43,7 @@ At the start of the next session, say:
     - Ingestion orchestrator: `backend/app/rag/ingest.py`
   - Tutor streaming:
     - `backend/app/agents/tutor.py`
-  - LLM provider abstraction (LangChain):
+  - LLM abstraction (LangChain):
     - `backend/app/services/llm.py`
 
 - Frontend created under `frontend/`
@@ -52,17 +51,18 @@ At the start of the next session, say:
   - Chat page: `frontend/src/app/chat/[bookId]/page.tsx`
   - API client: `frontend/src/lib/api.ts`
 
-- Runtime/config:
-  - `docker-compose.yml`
-  - `.env.example`
-  - `backend/requirements.txt`
-  - `README.md`
+- Hardening completed:
+  - Upload size/empty-file validation
+  - CORS for both `localhost` and `127.0.0.1`
+  - Chroma metadata scalar serialization fix
+  - SSE framing/parsing robustness improvements
+  - Polling while books are processing
 
 ## Important decisions already made
 
 - Do not use LiteLLM
 - Use LangChain chat models (`ChatOpenAI`, `ChatAnthropic`, `ChatOllama`)
-- Solo workflow for now: direct commits to `master` allowed
+- Solo workflow for now: direct commits to `master`
 - Branch/PR workflow only when contributors join
 
 See ADRs:
@@ -70,21 +70,36 @@ See ADRs:
 - `docs/adr/0002-langgraph-for-orchestration.md`
 - `docs/adr/0003-phase1-local-storage-and-sse.md`
 
-## First checks on next session
+## Run without Docker (preferred on this machine)
 
-1. `git status`
-2. If ahead by 1 commit and you want backup: `git push`
-3. Create `.env` from `.env.example`
-4. Start app:
-   - `docker compose up`
-5. Verify:
-   - Frontend: `http://localhost:3000`
-   - Backend docs: `http://localhost:8000/docs`
+1. Backend:
 
-## Suggested next work (Phase 1 hardening)
+```powershell
+cd C:\Users\Celavi\Documents\HelpMeLearn\backend
+.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
 
-1. Add strict upload size validation on backend
-2. Improve SSE framing robustness for multiline payloads
-3. Add frontend polling for processing status refresh
-4. Add basic integration test for upload -> ready -> chat path
-5. Then move to Phase 2 (router + specialized agents)
+2. Frontend:
+
+```powershell
+cd C:\Users\Celavi\Documents\HelpMeLearn\frontend
+npm run dev -- --hostname 127.0.0.1 --port 3000
+```
+
+3. Verify:
+- Frontend: `http://127.0.0.1:3000`
+- Backend docs: `http://127.0.0.1:8000/docs`
+- Health: `http://127.0.0.1:8000/api/health`
+
+## Known gotchas
+
+- Port conflict on backend startup (`WinError 10048`) means another process is using `8000`
+  - find: `netstat -ano | findstr :8000`
+  - kill: `taskkill /PID <PID> /F`
+- Browser origin mismatch (`localhost` vs `127.0.0.1`) can trigger CORS issues
+
+## Suggested next work
+
+1. Add integration test for upload -> ready -> chat stream path
+2. Start Phase 2: router + specialized agent nodes
+3. Introduce persistent progress tracking (SQLite) once Phase 2 flow is stable

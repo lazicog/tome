@@ -18,3 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tutor agent streaming answers with source chunk citations over SSE
 - Phase 1 frontend scaffold (Next.js) with library/upload view and per-book chat page
 - Docker Compose setup and root `.env.example` + project README quick start
+
+### Changed
+- Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready
+- SSE parsing in chat page now supports multi-line `data:` frames for better stream compatibility
+
+### Fixed
+- Upload endpoint now enforces max upload size and rejects empty uploads with clear errors
+- ChromaDB metadata serialization now stores scalar-safe values and reconstructs `page_numbers` on retrieval
+- CORS defaults now allow both `http://localhost:3000` and `http://127.0.0.1:3000` for local development
