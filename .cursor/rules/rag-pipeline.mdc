@@ -1,0 +1,48 @@
+---
+description: RAG pipeline standards for PDF processing, chunking, embeddings, and retrieval
+globs: backend/app/rag/**/*.py
+alwaysApply: false
+---
+
+# RAG Pipeline Standards
+
+## Chunking Rules
+
+- Never split mid-sentence, mid-code-block, or mid-table
+- Respect document hierarchy: prefer splitting at section/subsection boundaries
+- Target chunk size: 512-1024 tokens with 128-token overlap
+- Preserve code fences as atomic units (a code block is one chunk or stays with its surrounding text)
+
+## Chunk Metadata
+
+Every chunk must carry:
+
+```python
+class ChunkMetadata(TypedDict):
+    book_id: str
+    chapter: str
+    section: str
+    page_numbers: list[int]
+    chunk_index: int
+    content_type: str  # "text", "code", "table", "mixed"
+```
+
+## Embeddings
+
+- Default model: `sentence-transformers/all-MiniLM-L6-v2` (local, 384 dimensions)
+- API fallback: configurable via `settings.embedding_provider`
+- Batch embed with `encode(texts, batch_size=64, show_progress_bar=True)`
+- Normalize embeddings for cosine similarity
+
+## ChromaDB
+
+- Collection naming: `book_{book_id}`
+- Store `metadata` dict with every document
+- Use `collection.query(query_embeddings=..., n_results=k, where={...})` for filtered retrieval
+
+## Retrieval Strategy
+
+- Hybrid search: combine vector similarity with BM25 keyword matching
+- Rerank top candidates with a cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`)
+- Return top-k (default k=5) chunks with scores and metadata
+- Always return `list[ChunkResult]` with `content`, `score`, `metadata`

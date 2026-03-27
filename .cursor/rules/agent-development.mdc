@@ -1,0 +1,62 @@
+---
+description: LangGraph agent design conventions for the HelpMeLearn multi-agent system
+globs: backend/app/agents/**/*.py
+alwaysApply: false
+---
+
+# Agent Development Standards
+
+## Agent Structure
+
+Every agent node must define:
+1. A system prompt (as a constant or template)
+2. Input/output types via the shared `AgentState` TypedDict
+3. A single clear responsibility
+
+```python
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    query: str
+    book_id: str
+    chat_history: list[dict]
+    retrieved_chunks: list[ChunkResult]
+    response: str
+    source_chunks: list[SourceChunk]
+    agent_type: str
+```
+
+## LangGraph Conventions
+
+- Use `StateGraph` with the shared `AgentState` type
+- Define nodes as async functions: `async def tutor_node(state: AgentState) -> dict:`
+- Use conditional edges for routing; the router returns the next node name as a string
+- Never mutate state directly -- return a dict of fields to update
+
+```python
+graph = StateGraph(AgentState)
+graph.add_node("router", router_node)
+graph.add_node("tutor", tutor_node)
+graph.add_conditional_edges("router", route_query, {
+    "explain": "tutor",
+    "example": "example_gen",
+    "quiz": "quiz_master",
+})
+```
+
+## Prompt Engineering
+
+- Prompts must use `{context}` for retrieved RAG content -- never hardcode book text
+- Include `{chat_history}` for conversational continuity
+- Keep system prompts focused on the agent's single responsibility
+- Store prompts as module-level constants, not inline strings
+
+## Citations
+
+Every agent response must populate `source_chunks` with:
+- `book_id`, `chapter`, `section`, `page_numbers` for each referenced chunk
+- The frontend uses these to render clickable citations
+
+## Configuration
+
+Temperature, model name, and max tokens come from `app.config.settings` -- never hardcode.

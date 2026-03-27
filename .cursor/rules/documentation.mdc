@@ -1,0 +1,36 @@
+---
+description: Documentation standards -- agents must update ADRs, devlog, and changelog after significant work
+alwaysApply: true
+---
+
+# Documentation Requirements
+
+After completing a significant piece of work, update the relevant documentation:
+
+## Architecture Decision Records (docs/adr/)
+Write a new ADR when you:
+- Choose a library, framework, or tool
+- Pick an architecture or design pattern
+- Make a data model decision
+- Change a previous decision
+
+Format: `docs/adr/NNNN-short-title.md` (next sequential number)
+Template: Status, Date, Context, Decision, Consequences
+
+## Development Log (docs/devlog/)
+Write or update a devlog entry when you:
+- Complete a feature or phase
+- Finish a significant refactor
+- Resolve a complex bug
+
+Format: `docs/devlog/YYYY-MM-DD-short-title.md`
+Template: What was done, Key decisions (link ADRs), Issues/Gotchas, Next steps
+
+## Changelog (CHANGELOG.md)
+Update the [Unreleased] section when you:
+- Add a new user-facing feature (### Added)
+- Change existing functionality (### Changed)
+- Fix a bug (### Fixed)
+- Remove something (### Removed)
+
+Do NOT update documentation for trivial changes (typo fixes, comment updates, etc.)

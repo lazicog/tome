@@ -1,0 +1,58 @@
+---
+description: HelpMeLearn project architecture, tech stack, and conventions. Provides foundational context for all interactions.
+alwaysApply: true
+---
+
+# HelpMeLearn - Project Overview
+
+An open-source AI-powered learning companion that ingests technical PDFs and provides chat-based exploration, concept explanations, example generation, quizzing, and structured study paths.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.11+, FastAPI, SQLAlchemy, Alembic |
+| Frontend | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui |
+| Agent Orchestration | LangGraph (StateGraph, typed state, conditional edges) |
+| LLM Abstraction | LangChain Chat Models (ChatOpenAI, ChatAnthropic, ChatOllama) via factory pattern |
+| Vector Store | ChromaDB (embedded, zero-config) |
+| Database | SQLite (progress, quiz results, study plans) |
+| PDF Processing | PyMuPDF (fitz) for extraction, sentence-transformers for embeddings |
+
+## Directory Structure
+
+```
+HelpMeLearn/
+├── backend/
+│   └── app/
+│       ├── main.py              # FastAPI entry point
+│       ├── config.py            # pydantic-settings config
+│       ├── api/routes/          # REST + SSE endpoints
+│       ├── agents/              # LangGraph agent nodes and graph
+│       ├── rag/                 # PDF processing, chunking, retrieval
+│       ├── db/                  # SQLAlchemy models, database setup
+│       └── services/            # LLM wrapper, shared services
+├── frontend/
+│   └── src/
+│       ├── app/                 # Next.js App Router pages
+│       ├── components/          # Reusable UI components
+│       └── lib/                 # API client, hooks, utils
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+## Naming Conventions
+
+- **Python**: `snake_case` for files, functions, variables; `PascalCase` for classes
+- **TypeScript**: `camelCase` for functions/variables; `PascalCase` for components/types
+- **Files**: `kebab-case` for frontend files; `snake_case` for backend files
+- **API routes**: plural nouns (`/books`, `/quizzes`), nested resources (`/books/{id}/chat`)
+
+## Design Principles
+
+1. **Local-first**: SQLite + ChromaDB = zero external infrastructure by default
+2. **Provider-agnostic**: all LLM calls go through a `get_chat_model()` factory in `app/services/llm.py`; agents receive a `BaseChatModel` instance, never a concrete provider class
+3. **Streaming-first**: chat responses always stream via SSE
+4. **Citation-backed**: every AI response references source chunks with book/page metadata
+5. **Configurable**: all model names, temperatures, and API keys come from config, never hardcoded

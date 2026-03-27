@@ -1,0 +1,72 @@
+---
+description: REST API design conventions for HelpMeLearn backend endpoints
+globs: backend/app/api/**/*.py
+alwaysApply: false
+---
+
+# API Design Standards
+
+## Resource Naming
+
+RESTful, plural nouns, nested for relationships:
+
+```
+GET    /books                    # list all books
+POST   /books                    # upload a new book (multipart)
+GET    /books/{id}               # get book details + processing status
+DELETE /books/{id}               # remove a book
+POST   /books/{id}/chat          # send a chat message (SSE stream response)
+GET    /books/{id}/chapters      # get book structure / TOC
+POST   /books/{id}/quizzes       # generate a quiz
+GET    /books/{id}/progress      # get study progress
+```
+
+## Response Models
+
+Every endpoint returns a Pydantic model -- never a raw dict or untyped JSON.
+
+```python
+class BookResponse(BaseModel):
+    id: str
+    title: str
+    status: ProcessingStatus
+    chapters: list[ChapterSummary]
+    created_at: datetime
+
+@router.get("/{book_id}", response_model=BookResponse)
+async def get_book(book_id: str, db: AsyncSession = Depends(get_db)) -> BookResponse: ...
+```
+
+## Streaming (SSE)
+
+Chat endpoints return `text/event-stream` via `StreamingResponse`:
+
+```python
+from sse_starlette.sse import EventSourceResponse
+
+@router.post("/{book_id}/chat")
+async def chat(book_id: str, req: ChatRequest) -> EventSourceResponse:
+    return EventSourceResponse(stream_agent_response(book_id, req))
+```
+
+## Pagination
+
+List endpoints accept `?page=1&limit=20` and return:
+
+```python
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    total: int
+    page: int
+    limit: int
+```
+
+## File Uploads
+
+- Use `UploadFile` with content-type validation (`application/pdf`)
+- Enforce max file size in middleware (default 100MB)
+- Return processing status immediately; process async in background
+
+## Documentation
+
+Every route function has a docstring used as the OpenAPI description. Include `response_model`, `status_code`, and `summary` parameters.

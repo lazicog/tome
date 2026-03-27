@@ -1,0 +1,49 @@
+---
+description: Next.js and React frontend patterns for the HelpMeLearn UI
+globs: frontend/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# Frontend Standards
+
+## Next.js App Router
+
+- Server Components by default; add `"use client"` only for interactivity (state, effects, event handlers)
+- Use `loading.tsx` and `error.tsx` for route-level loading/error states
+- Data fetching in Server Components via `fetch` with proper cache/revalidation settings
+
+## Component Library
+
+Use **shadcn/ui** as the component foundation. Never build from scratch what shadcn provides (Button, Dialog, Card, Input, Tabs, etc.). Customize via Tailwind classes and the `cn()` utility.
+
+## API Client
+
+All backend calls go through `lib/api.ts` -- a typed client with:
+- Base URL from environment variable `NEXT_PUBLIC_API_URL`
+- Typed request/response generics
+- Error handling wrapper
+
+```typescript
+export async function fetchBooks(): Promise<Book[]> {
+  const res = await fetch(`${API_URL}/books`);
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  return res.json();
+}
+```
+
+## Streaming Chat
+
+Use SSE (`EventSource` or `fetch` with `ReadableStream`) for chat responses. Parse streamed tokens and render incrementally with markdown support.
+
+## Styling
+
+- Mobile-first: base styles for mobile, `md:` and `lg:` for larger screens
+- Use Tailwind utility classes; avoid custom CSS files
+- Dark mode support via `dark:` variants and CSS variables
+
+## Accessibility
+
+- Semantic HTML (`<main>`, `<nav>`, `<article>`, `<section>`)
+- ARIA labels on interactive elements without visible text
+- Keyboard navigation for all interactive components
+- Focus management for modals and dynamic content
