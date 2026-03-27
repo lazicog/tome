@@ -1,4 +1,4 @@
-﻿# Tome Session Handoff
+# Tome Session Handoff
 
 Use this file as the startup context when resuming work with the agent.
 
@@ -20,6 +20,10 @@ At the start of the next session, say:
 ### Foundation and conventions
 
 - Cursor rules and skills are set up
+- Spec-first workflow is configured:
+  - Rule: `.cursor/rules/specs.mdc`
+  - Skill: `.cursor/skills/spec-authoring/SKILL.md`
+  - Specs directory: `docs/specs/`
 - Documentation system is active:
   - ADRs in `docs/adr/`
   - Devlog in `docs/devlog/`

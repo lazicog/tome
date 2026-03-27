@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tutor agent streaming answers with source chunk citations over SSE
 - Phase 1 frontend scaffold (Next.js) with library/upload view and per-book chat page
 - Docker Compose setup and root `.env.example` + project README quick start
+- Spec-first workflow support:
+  - always-on spec rule in `.cursor/rules/specs.mdc`
+  - `spec-authoring` skill in `.cursor/skills/spec-authoring/`
+  - `docs/specs/` directory with naming and template guidance
 
 ### Changed
 - Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready

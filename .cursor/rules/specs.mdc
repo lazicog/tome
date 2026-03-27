@@ -1,0 +1,40 @@
+---
+description: Spec-first workflow for non-trivial work in Tome
+alwaysApply: true
+---
+
+# Specs Workflow
+
+Write a spec before implementing non-trivial work (new features, major refactors, cross-cutting fixes, API changes).
+
+## When A Spec Is Required
+
+- New user-facing feature
+- Changes touching 3+ files
+- API contract changes
+- Data model/storage changes
+- Multi-step refactor
+
+For trivial edits (typos, formatting, tiny isolated fix), skip spec.
+
+## Where Specs Live
+
+- Path: `docs/specs/YYYY-MM-DD-short-title.md`
+- Keep one spec per meaningful change
+
+## Required Sections
+
+1. Problem statement
+2. Scope
+3. Goals and non-goals
+4. Proposed design
+5. API/data changes (if any)
+6. Risks and mitigations
+7. Test plan
+8. Rollout plan
+
+## During Implementation
+
+- If implementation diverges from spec, update the spec first.
+- Link relevant ADRs/devlog entries when architectural decisions are involved.
+- Keep specs concise and actionable.
