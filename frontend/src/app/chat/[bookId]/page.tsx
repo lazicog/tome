@@ -7,10 +7,16 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 type Message = { role: "user" | "assistant"; content: string };
 
+function toAgentLabel(agentType: string): string {
+  if (agentType === "example") return "Example Agent";
+  if (agentType === "context") return "Context Enricher";
+  return "Tutor";
+}
+
 export default function ChatPage() {
   const params = useParams<{ bookId: string }>();
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Array<Message & { agentType?: string }>>([]);
   const [sources, setSources] = useState<string>("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +51,7 @@ export default function ChatPage() {
     const decoder = new TextDecoder();
     let buffer = "";
     let assistantText = "";
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: "", agentType: "explain" }]);
 
     while (true) {
       const { done, value } = await reader.read();
@@ -68,7 +74,15 @@ export default function ChatPage() {
           assistantText += JSON.parse(data) as string;
           setMessages((prev) => {
             const copy = [...prev];
-            copy[copy.length - 1] = { role: "assistant", content: assistantText };
+            copy[copy.length - 1] = { ...copy[copy.length - 1], role: "assistant", content: assistantText };
+            return copy;
+          });
+        }
+        if (event === "agent") {
+          const routed = JSON.parse(data) as string;
+          setMessages((prev) => {
+            const copy = [...prev];
+            copy[copy.length - 1] = { ...copy[copy.length - 1], role: "assistant", agentType: routed };
             return copy;
           });
         }
@@ -88,7 +102,7 @@ export default function ChatPage() {
       <div style={{ minHeight: 280, border: "1px solid #334155", borderRadius: 8, padding: "1rem", marginBottom: "1rem" }}>
         {messages.map((m, idx) => (
           <p key={idx}>
-            <strong>{m.role === "user" ? "You" : "Tutor"}:</strong> {m.content}
+            <strong>{m.role === "user" ? "You" : toAgentLabel(m.agentType ?? "explain")}:</strong> {m.content}
           </p>
         ))}
       </div>

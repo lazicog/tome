@@ -17,11 +17,28 @@
   - `backend/app/agents/tutor.py`
 - Added `langgraph` dependency to backend requirements:
   - `backend/requirements.txt`
+- Added routing visibility and behavior tuning pass after manual chat checks:
+  - backend now emits explicit `agent` SSE event for routed and fallback tutor flows
+  - frontend chat UI now renders routed assistant label from stream events
+  - refined prompts for Example Generator and Context Enricher for stronger role separation
+- Added regression hardening after manual routed chat validation:
+  - router now classifies based on the current user query (not prior chat turns)
+  - context intent matching now takes precedence over example intent matching
+  - expanded tests for router phrase variants and SSE `agent` / `done` event contract
+- Added API-level routed chat integration coverage:
+  - new test validates stream event ordering contract (`agent` -> `token` -> `sources` -> `done`)
+  - test patches route dependencies to isolate API behavior without external LLM/network calls
+- Added API-level fallback chat integration coverage:
+  - new test validates Tutor stream ordering when `phase2_routing_enabled=false`
+  - confirms fallback path keeps the same SSE contract ordering
+- Added API-level upload lifecycle integration coverage:
+  - new test exercises upload -> ready status -> routed chat stream flow
+  - test uses mocked storage/processing + routed stream dependencies for deterministic behavior
 
 ## Key decisions made
 
 - Use deterministic keyword-based routing for Phase 2 MVP intent classification (`explain`, `example`, `context`) to avoid adding model-classifier latency/cost in the first pass.
-- Keep current SSE contract stable (`token`, `sources`, `done`) to avoid frontend contract breaks.
+- Keep SSE event framing stable and explicit (`agent`, `token`, `sources`, `done`) for frontend compatibility.
 - Route fallback remains Tutor behavior (`explain`) when intent is ambiguous.
 
 ## Issues / Gotchas
@@ -31,9 +48,5 @@
 
 ## Next steps
 
-- Implement/verify full routing behavior in runtime path with local integration checks:
-  - `example` query routes to Example node prompt
-  - `context` query routes to Context node prompt
-  - default routes to Tutor
-- Add tests for routing classification and SSE event contract.
+- Run a short end-to-end check for mixed-turn conversations (example -> context -> explain) in the UI.
 - Continue remaining Phase 2 checklist items from the approved spec.

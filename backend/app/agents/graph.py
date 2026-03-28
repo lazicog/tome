@@ -98,5 +98,6 @@ async def stream_routed_answer(book_id: str, message: str, history: list[ChatMes
         message=message,
         history=history,
         sources=state.get("source_chunks", []),
+        agent_type=state.get("agent_type", "explain"),
     ):
         yield event

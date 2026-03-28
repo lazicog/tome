@@ -63,6 +63,8 @@ async def stream_tutor_answer(book_id: str, message: str, history: list[ChatMess
         HumanMessage(content=message),
     ]
 
+    yield _sse_event("agent", "explain")
+
     async for chunk in llm.astream(prompt_messages):
         token = chunk.content
         if token:
@@ -79,6 +81,7 @@ async def stream_prompted_answer(
     message: str,
     history: list[ChatMessage],
     sources: list[dict],
+    agent_type: str | None = None,
 ) -> AsyncIterator[str]:
     llm = get_chat_model_with_fallback()
     prompt_messages = [
@@ -86,6 +89,9 @@ async def stream_prompted_answer(
         *_history_to_messages(history),
         HumanMessage(content=message),
     ]
+
+    if agent_type:
+        yield _sse_event("agent", agent_type)
 
     async for chunk in llm.astream(prompt_messages):
         token = chunk.content

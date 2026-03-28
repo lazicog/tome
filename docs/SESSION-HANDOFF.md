@@ -71,6 +71,12 @@ At the start of the next session, say:
   - Specialized prompts: `backend/app/agents/example_gen.py`, `backend/app/agents/context_enricher.py`
   - LangGraph orchestration: `backend/app/agents/graph.py`
   - Chat route wired to routed flow: `backend/app/api/routes/chat.py`
+  - Chat stream now emits explicit routed `agent` event and frontend shows agent label
+  - Router intent logic hardened to use current user query (history no longer biases intent)
+  - Test coverage expanded for router phrase variants and SSE event contract (`agent`, `token`, `sources`, `done`)
+  - API integration test added for routed chat SSE event order (`agent` -> `token` -> `sources` -> `done`)
+  - API integration test added for fallback Tutor path with routing disabled
+  - API integration test added for upload -> ready -> routed chat flow
 
 ## Important decisions already made
 
@@ -115,5 +121,5 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 ## Suggested next work
 
 1. Complete Phase 2 checklist implementation and validation from the approved spec
-2. Add integration test for upload -> ready -> routed chat stream path
+2. Add user-facing source rendering improvements on the chat page (source cards/links)
 3. Introduce persistent progress tracking (SQLite) once routing is stable

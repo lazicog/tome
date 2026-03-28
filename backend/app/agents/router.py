@@ -1,9 +1,8 @@
 from app.schemas import ChatMessage
 
 
-def classify_intent(query: str, history: list[ChatMessage]) -> str:
-    text = f"{query} " + " ".join(m.content for m in history[-3:])
-    lowered = text.lower()
+def classify_intent(query: str, _: list[ChatMessage]) -> str:
+    lowered = query.lower()
 
     example_terms = [
         "example",
@@ -25,8 +24,8 @@ def classify_intent(query: str, history: list[ChatMessage]) -> str:
         "basics",
     ]
 
-    if any(term in lowered for term in example_terms):
-        return "example"
     if any(term in lowered for term in context_terms):
         return "context"
+    if any(term in lowered for term in example_terms):
+        return "example"
     return "explain"
