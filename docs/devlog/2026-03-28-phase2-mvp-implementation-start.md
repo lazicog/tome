@@ -42,6 +42,7 @@
   - worktree collaboration playbook at `docs/workflows/multi-agent-worktree-playbook.md`
   - project skills for `multi-agent-coordinator`, `worktree-feature-builder`, `pr-review-guardian`, and `worktree-integration-manager`
   - role-based templates/checklists for handoff, review findings, and merge integration logs
+  - added frontend chat regression checklist for manual QA repeatability
 - Strengthened routed intent reliability tests:
   - added API-level matrix coverage for `explain`, `example`, and `context` queries
   - tests keep real router path enabled while stubbing retrieval/LLM dependencies for deterministic assertions

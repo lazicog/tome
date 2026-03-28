@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Multi-agent collaboration assets:
   - `docs/workflows/multi-agent-worktree-playbook.md`
   - specialized Cursor skills for coordinator, feature builder, reviewer, and integration manager
+- Frontend chat manual QA checklist for stream, source UX, and failure-path regression checks
 - API-level routed intent matrix tests (`explain`, `example`, `context`) with active router path and LLM stub
 - API-level assertions that routed streams emit `sources` exactly once with required source fields
 - API integration tests for chat error paths (`404` book missing, `400` book still processing)

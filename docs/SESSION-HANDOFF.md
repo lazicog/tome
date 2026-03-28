@@ -85,6 +85,7 @@ At the start of the next session, say:
   - Frontend source cards now support page filters and copy-citation actions
   - Frontend chat stream handling now clears loading state via `finally` on stream/parse errors
   - Multi-agent worktree playbook and role-specialized project skills are now in repo
+  - Frontend chat regression checklist is available at `docs/workflows/frontend-chat-regression-checklist.md`
 
 ## Important decisions already made
 

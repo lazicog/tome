@@ -83,3 +83,7 @@ Use this when running multiple Cursor agents in parallel, each on a separate fea
 - Merge only when reviewer reports no unresolved critical findings.
 - Keep PRs under ~400 changed lines when possible.
 - Prefer sequential merges for features touching shared contracts (SSE/API schemas).
+
+## Manual QA Reference
+
+- Frontend chat regression checks: `docs/workflows/frontend-chat-regression-checklist.md`
