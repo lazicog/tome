@@ -120,4 +120,5 @@ async def serve_book_pdf(book_id: str):
         path=str(file_path),
         media_type="application/pdf",
         filename=item.file_name,
+        content_disposition_type="inline",
     )
