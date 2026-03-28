@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BookOpen, Upload, RefreshCw, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { BookOpen, Upload, RefreshCw, Clock, CheckCircle, AlertCircle, Loader2, Trash2, Library } from "lucide-react";
 
-import { listBooks, uploadBook, reingestBook, type Book } from "../lib/api";
+import { listBooks, uploadBook, reingestBook, deleteBook, type Book } from "../lib/api";
 import { cn } from "../lib/utils";
 
 function StatusBadge({ status }: { status: Book["status"] }) {
@@ -22,12 +22,40 @@ function StatusBadge({ status }: { status: Book["status"] }) {
   );
 }
 
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+function Toast({ message, onDone }: { message: string; onDone: () => void }) {
+  const [exiting, setExiting] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setExiting(true), 2500);
+    const t2 = setTimeout(onDone, 2800);
+    return () => { clearTimeout(t); clearTimeout(t2); };
+  }, [onDone]);
+
+  return (
+    <div className={cn(
+      "fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-lg bg-bg-card border border-border shadow-lg text-sm text-text",
+      exiting ? "toast-exit" : "toast-enter"
+    )}>
+      {message}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [toast, setToast] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async (silent = false) => {
@@ -63,6 +91,7 @@ export default function HomePage() {
     setError("");
     try {
       await uploadBook(file);
+      setToast("Book uploaded! Processing will start shortly.");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -74,6 +103,7 @@ export default function HomePage() {
   const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) void handleUpload(file);
+    if (e.target) e.target.value = "";
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -86,14 +116,28 @@ export default function HomePage() {
   const handleReingest = async (bookId: string) => {
     try {
       await reingestBook(bookId);
+      setToast("Re-ingesting with improved pipeline...");
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Re-ingest failed");
     }
   };
 
+  const handleDelete = async (bookId: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This removes the book, its embeddings, and chat history.`)) return;
+    try {
+      await deleteBook(bookId);
+      setToast("Book deleted.");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {toast && <Toast message={toast} onDone={() => setToast("")} />}
+
       <div className="text-center space-y-2 pt-4">
         <h1 className="text-3xl font-bold text-text-heading">Your Library</h1>
         <p className="text-text-muted">Upload a technical PDF and learn with AI-powered tutoring, examples, and quizzes.</p>
@@ -133,7 +177,11 @@ export default function HomePage() {
           <p className="text-text-muted mt-2 text-sm">Loading library...</p>
         </div>
       ) : books.length === 0 ? (
-        <p className="text-center text-text-muted py-12">No books yet. Upload your first PDF above.</p>
+        <div className="text-center py-16">
+          <Library className="w-12 h-12 mx-auto text-text-muted/30 mb-4" />
+          <p className="text-text-heading font-medium mb-1">Your library is empty</p>
+          <p className="text-text-muted text-sm">Upload your first PDF above to get started.</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {books.map((book) => (
@@ -147,7 +195,15 @@ export default function HomePage() {
                   <StatusBadge status={book.status} />
                 </div>
                 <h3 className="text-text-heading font-semibold leading-snug line-clamp-2 mb-1">{book.title}</h3>
-                <p className="text-xs text-text-muted">{book.chunks} chunks</p>
+                <div className="flex items-center gap-2 text-xs text-text-muted">
+                  <span>{book.chunks} chunks</span>
+                  {book.created_at && (
+                    <>
+                      <span className="text-border">·</span>
+                      <span>{formatDate(book.created_at)}</span>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="mt-4 flex items-center gap-2">
                 {book.status === "ready" ? (
@@ -165,7 +221,21 @@ export default function HomePage() {
                     >
                       <RefreshCw className="w-4 h-4" />
                     </button>
+                    <button
+                      onClick={() => void handleDelete(book.id, book.title)}
+                      title="Delete book"
+                      className="p-2 rounded-lg border border-border hover:bg-error/10 hover:border-error/40 transition-colors text-text-muted hover:text-error"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </>
+                ) : book.status === "failed" ? (
+                  <button
+                    onClick={() => void handleDelete(book.id, book.title)}
+                    className="text-xs text-error hover:underline"
+                  >
+                    Delete failed upload
+                  </button>
                 ) : (
                   <span className="text-xs text-text-muted">Available when ready</span>
                 )}

@@ -14,6 +14,8 @@ import {
   Loader2,
   FileText,
   X,
+  Sparkles,
+  GripVertical,
 } from "lucide-react";
 
 import PdfViewer from "../../../components/PdfViewer";
@@ -44,6 +46,23 @@ function agentLabel(t: string): string {
   return "Tutor";
 }
 
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-1 py-1">
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-accent" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-accent" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-accent" />
+    </div>
+  );
+}
+
+const SUGGESTIONS = [
+  { label: "Explain the main concepts", icon: "explain" },
+  { label: "Show me a code example", icon: "example" },
+  { label: "Give me background context", icon: "context" },
+  { label: "Quiz me on this chapter", icon: "quiz" },
+];
+
 export default function BookPage() {
   const params = useParams<{ bookId: string }>();
   const bookId = params.bookId;
@@ -56,11 +75,18 @@ export default function BookPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sources, setSources] = useState<SourceChunk[]>([]);
   const [sending, setSending] = useState(false);
+  const [waitingForFirst, setWaitingForFirst] = useState(false);
   const [error, setError] = useState("");
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Resizable pane
+  const [pdfWidth, setPdfWidth] = useState(50);
+  const dragging = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void getBook(bookId).then(setBook);
@@ -78,6 +104,37 @@ export default function BookPage() {
   }, [bookId]);
 
   useEffect(() => { void refreshSessions(); }, [refreshSessions]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + "px";
+  }, [input]);
+
+  // Drag to resize
+  const onDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+      setPdfWidth(Math.max(25, Math.min(75, pct)));
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
 
   const resumeSession = async (session: Session) => {
     setActiveSessionId(session.id);
@@ -99,13 +156,15 @@ export default function BookPage() {
     setError("");
   };
 
-  const send = async () => {
-    if (!input.trim() || sending) return;
-    const userMsg: Message = { role: "user", content: input };
+  const sendMessage = async (text?: string) => {
+    const msg = text ?? input;
+    if (!msg.trim() || sending) return;
+    const userMsg: Message = { role: "user", content: msg };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
     setSending(true);
+    setWaitingForFirst(true);
     setError("");
     setSources([]);
 
@@ -121,8 +180,8 @@ export default function BookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!res.ok) { setError(await res.text()); return; }
-      if (!res.body) { setError("No stream returned."); return; }
+      if (!res.ok) { setError(await res.text()); setWaitingForFirst(false); return; }
+      if (!res.body) { setError("No stream returned."); setWaitingForFirst(false); return; }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -149,6 +208,7 @@ export default function BookPage() {
             try { setActiveSessionId(JSON.parse(data)); } catch { /* */ }
           }
           if (event === "token") {
+            setWaitingForFirst(false);
             try { assistantText += JSON.parse(data) as string; } catch { continue; }
             setMessages((prev) => {
               const copy = [...prev];
@@ -175,6 +235,14 @@ export default function BookPage() {
       setError("Chat request failed.");
     } finally {
       setSending(false);
+      setWaitingForFirst(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && !sending) {
+      e.preventDefault();
+      void sendMessage();
     }
   };
 
@@ -205,15 +273,25 @@ export default function BookPage() {
       </div>
 
       {/* Main split pane */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden">
         {/* PDF Viewer */}
-        <div className={cn("min-h-0", chatOpen ? "w-1/2" : "w-full")}>
+        <div style={{ width: chatOpen ? `${pdfWidth}%` : "100%" }} className="min-h-0 shrink-0">
           <PdfViewer url={pdfUrl} goToPage={goToPage} />
         </div>
 
+        {/* Drag handle */}
+        {chatOpen && (
+          <div
+            onMouseDown={onDragStart}
+            className="resize-handle w-1.5 shrink-0 bg-border hover:bg-accent transition-colors flex items-center justify-center"
+          >
+            <GripVertical className="w-3 h-3 text-text-muted pointer-events-none" />
+          </div>
+        )}
+
         {/* Chat panel */}
         {chatOpen && (
-          <div className="w-1/2 flex flex-col border-l border-border min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
             {/* Session bar */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-bg-card/50 shrink-0 overflow-x-auto">
               <button
@@ -241,9 +319,21 @@ export default function BookPage() {
             {/* Messages */}
             <div className="flex-1 overflow-auto px-3 py-3 space-y-3">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-text-muted">
-                  <BookOpen className="w-8 h-8 mb-3 opacity-40" />
-                  <p className="text-sm">Ask a question about this book.</p>
+                <div className="flex flex-col items-center justify-center h-full">
+                  <BookOpen className="w-10 h-10 mb-4 text-text-muted opacity-30" />
+                  <p className="text-sm text-text-muted mb-5">Ask a question about this book</p>
+                  <div className="grid grid-cols-2 gap-2 max-w-xs w-full">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => void sendMessage(s.label)}
+                        className="text-left px-3 py-2.5 rounded-lg border border-border bg-bg-card/50 text-xs text-text-muted hover:text-text hover:border-text-muted transition-colors leading-snug"
+                      >
+                        <Sparkles className="w-3 h-3 text-accent mb-1" />
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 messages.map((m, i) => (
@@ -260,9 +350,15 @@ export default function BookPage() {
                         <div className="text-[11px] font-medium text-accent mb-1">{agentLabel(m.agentType ?? "explain")}</div>
                       )}
                       {m.role === "assistant" ? (
-                        <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content || "..."}</ReactMarkdown>
-                        </div>
+                        m.content ? (
+                          <div className="prose-chat text-sm max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                          </div>
+                        ) : waitingForFirst ? (
+                          <TypingIndicator />
+                        ) : (
+                          <span className="text-text-muted">...</span>
+                        )
                       ) : (
                         <span>{m.content}</span>
                       )}
@@ -286,10 +382,11 @@ export default function BookPage() {
                         if (p) setGoToPage(p);
                       }}
                       className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-input border border-border text-xs text-text-muted hover:text-accent hover:border-accent/40 transition-colors"
-                      title={`${s.chapter} - ${s.section} (score: ${s.score.toFixed(3)})`}
+                      title={`Score: ${s.score.toFixed(3)}`}
                     >
                       <FileText className="w-3 h-3" />
-                      p.{s.page_numbers.join(",")}
+                      <span className="max-w-[120px] truncate">{s.chapter !== "Unknown" ? s.chapter : s.section}</span>
+                      <span className="text-text-muted/60">p.{s.page_numbers.join(",")}</span>
                     </button>
                   ))}
                 </div>
@@ -307,22 +404,25 @@ export default function BookPage() {
 
             {/* Input */}
             <div className="px-3 py-2.5 border-t border-border shrink-0">
-              <div className="flex gap-2">
-                <input
+              <div className="flex gap-2 items-end">
+                <textarea
+                  ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !sending) void send(); }}
+                  onKeyDown={handleKeyDown}
                   placeholder="Ask about this book..."
-                  className="flex-1 bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                  rows={1}
+                  className="flex-1 bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors resize-none overflow-hidden leading-relaxed"
                 />
                 <button
-                  onClick={() => void send()}
+                  onClick={() => void sendMessage()}
                   disabled={sending || !input.trim()}
-                  className="px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                  className="px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover disabled:opacity-40 transition-colors flex items-center gap-1.5 shrink-0"
                 >
                   {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-[10px] text-text-muted/50 mt-1 px-1">Enter to send · Shift+Enter for new line</p>
             </div>
           </div>
         )}

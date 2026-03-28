@@ -65,6 +65,13 @@ export async function reingestBook(bookId: string): Promise<Book> {
   return (await res.json()) as Book;
 }
 
+export async function deleteBook(bookId: string): Promise<void> {
+  const res = await fetch(`${API}/books/${bookId}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+}
+
 export function getBookPdfUrl(bookId: string): string {
   return `${API}/books/${bookId}/pdf`;
 }

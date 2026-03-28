@@ -85,3 +85,15 @@ async def update_book_status(book_id: str, status: ProcessingStatus, chunks: int
     if chunks:
         books[book_id]["chunks"] = chunks
     await save_books(books)
+
+
+async def delete_book(book_id: str) -> bool:
+    books = await load_books()
+    if book_id not in books:
+        return False
+    del books[book_id]
+    await save_books(books)
+    pdf_path = settings.uploads_dir / f"{book_id}.pdf"
+    if pdf_path.exists():
+        pdf_path.unlink()
+    return True

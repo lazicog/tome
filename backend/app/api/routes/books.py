@@ -5,8 +5,9 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.rag.ingest import ingest_book, reingest_book
+from app.rag.retriever import delete_collection
 from app.schemas import BookListResponse, BookResponse, ProcessingStatus
-from app.services.storage_provider import create_book, get_book, list_books, update_book_status
+from app.services.storage_provider import create_book, delete_book, get_book, list_books, update_book_status
 
 log = structlog.get_logger()
 router = APIRouter(prefix="/books", tags=["books"])
@@ -104,6 +105,17 @@ async def reingest_book_endpoint(book_id: str, background_tasks: BackgroundTasks
 
     background_tasks.add_task(_do_reingest, book_id, str(file_path))
     return item
+
+
+@router.delete("/{book_id}", status_code=204, summary="Delete a book and its data")
+async def delete_book_endpoint(book_id: str):
+    item = await get_book(book_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    delete_collection(book_id)
+    await delete_book(book_id)
+    return None
 
 
 @router.get("/{book_id}/pdf", summary="Serve the uploaded PDF file")

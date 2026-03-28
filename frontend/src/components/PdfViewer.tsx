@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PdfViewerProps {
   url: string;
@@ -11,15 +11,21 @@ interface PdfViewerProps {
 export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
   const [pageNum, setPageNum] = useState(1);
   const [inputVal, setInputVal] = useState("1");
-  const [loaded, setLoaded] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    if (goToPage && goToPage >= 1) {
+    if (goToPage && goToPage >= 1 && goToPage !== pageNum) {
       setPageNum(goToPage);
       setInputVal(String(goToPage));
     }
   }, [goToPage]);
+
+  useEffect(() => {
+    if (!iframeRef.current || initialLoad) return;
+    const newSrc = `${url}#page=${pageNum}&toolbar=0&navpanes=0`;
+    iframeRef.current.src = newSrc;
+  }, [pageNum, url, initialLoad]);
 
   const navigate = (p: number) => {
     if (p >= 1) {
@@ -28,7 +34,7 @@ export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
     }
   };
 
-  const iframeSrc = `${url}#page=${pageNum}&toolbar=0&navpanes=0`;
+  const initialSrc = `${url}#page=${pageNum}&toolbar=0&navpanes=0`;
 
   return (
     <div className="flex flex-col min-h-0 h-full">
@@ -71,17 +77,15 @@ export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
       </div>
 
       <div className="flex-1 relative">
-        {!loaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted z-10 bg-bg">
-            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+        {initialLoad && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted z-10 bg-bg animate-pulse">
             <span className="text-sm">Loading PDF...</span>
           </div>
         )}
         <iframe
           ref={iframeRef}
-          key={pageNum}
-          src={iframeSrc}
-          onLoad={() => setLoaded(true)}
+          src={initialSrc}
+          onLoad={() => setInitialLoad(false)}
           className="w-full h-full border-0"
           title="PDF Viewer"
         />

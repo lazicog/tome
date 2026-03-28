@@ -75,3 +75,17 @@ async def update_book_status(book_id: str, status: ProcessingStatus, chunks: int
                 (status.value, book_id),
             )
         await conn.commit()
+
+
+async def delete_book(book_id: str) -> bool:
+    await init_db()
+    async with get_connection() as conn:
+        cursor = await conn.execute("DELETE FROM books WHERE id = ?", (book_id,))
+        await conn.commit()
+        if cursor.rowcount == 0:
+            return False
+    uploads = get_uploads_dir()
+    pdf_path = uploads / f"{book_id}.pdf"
+    if pdf_path.exists():
+        pdf_path.unlink()
+    return True
