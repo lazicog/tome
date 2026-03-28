@@ -77,11 +77,15 @@ def chunk_pages_rich(
         nonlocal chunk_index, current_parts, current_tokens, current_pages
         if not current_parts:
             return
-        content = "\n\n".join(current_parts).strip()
-        if not content:
+        body = "\n\n".join(current_parts).strip()
+        if not body:
             return
         sorted_pages = sorted(current_pages) if current_pages else [1]
         section_label = current_section or f"Pages {sorted_pages[0]}-{sorted_pages[-1]}"
+
+        context_header = f"[Chapter: {current_chapter} | Section: {section_label}]"
+        content = f"{context_header}\n\n{body}"
+
         chunks.append(
             Chunk(
                 id=f"{book_id}-{chunk_index}",

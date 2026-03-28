@@ -34,17 +34,49 @@ def _history_to_messages(history: list[ChatMessage]) -> list[HumanMessage | AIMe
     return output
 
 
+def _extract_quote(content: str, max_len: int = 160) -> str:
+    """Pull the first meaningful sentence(s) from a chunk as a preview quote."""
+    text = content
+    if text.startswith("["):
+        newline_pos = text.find("\n\n")
+        if newline_pos != -1:
+            text = text[newline_pos + 2:]
+    sentences = text.replace("\n", " ").split(". ")
+    quote = ". ".join(sentences[:2]).strip()
+    if len(quote) > max_len:
+        quote = quote[:max_len].rsplit(" ", 1)[0] + "..."
+    return quote
+
+
+def _relevance_label(score: float) -> str:
+    if score >= 0.7:
+        return "high"
+    if score >= 0.4:
+        return "medium"
+    return "low"
+
+
 def _format_sources(chunks: list[dict]) -> list[dict]:
-    return [
-        {
+    seen_pages: set[tuple[str, str]] = set()
+    sources: list[dict] = []
+    for c in chunks:
+        chapter = c["metadata"].get("chapter", "Unknown")
+        pages_key = (chapter, ",".join(str(p) for p in c["metadata"].get("page_numbers", [])))
+        if pages_key in seen_pages:
+            continue
+        seen_pages.add(pages_key)
+
+        score = c.get("rerank_score", c.get("score", 0.0))
+        sources.append({
             "chunk_id": c["id"],
-            "chapter": c["metadata"].get("chapter", "Unknown"),
+            "chapter": chapter,
             "section": c["metadata"].get("section", "Unknown"),
             "page_numbers": c["metadata"].get("page_numbers", []),
-            "score": round(float(c["score"]), 4),
-        }
-        for c in chunks
-    ]
+            "score": round(float(score), 4),
+            "relevance": _relevance_label(float(score)),
+            "quote": _extract_quote(c.get("content", "")),
+        })
+    return sources
 
 
 def build_context(chunks: list[dict]) -> str:

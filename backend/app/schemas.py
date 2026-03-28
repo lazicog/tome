@@ -44,6 +44,8 @@ class SourceChunk(BaseModel):
     section: str
     page_numbers: list[int]
     score: float
+    relevance: str = "medium"
+    quote: str = ""
 
 
 class SessionResponse(BaseModel):
@@ -57,6 +59,36 @@ class SessionResponse(BaseModel):
 class SessionMessagesResponse(BaseModel):
     session_id: str
     messages: list[ChatMessage]
+
+
+class NoteCreate(BaseModel):
+    page_number: int | None = None
+    chapter: str | None = None
+    title: str = ""
+    content: str
+    type: str = "manual"
+    source_message_id: int | None = None
+    tags: str = ""
+
+
+class NoteUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    tags: str | None = None
+
+
+class NoteResponse(BaseModel):
+    id: str
+    book_id: str
+    page_number: int | None = None
+    chapter: str | None = None
+    title: str
+    content: str
+    type: str
+    source_message_id: int | None = None
+    tags: str
+    created_at: str
+    updated_at: str
 
 
 class ErrorResponse(BaseModel):
