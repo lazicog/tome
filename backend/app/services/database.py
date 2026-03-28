@@ -31,6 +31,20 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     agent_type TEXT,
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS notes (
+    id TEXT PRIMARY KEY,
+    book_id TEXT NOT NULL REFERENCES books(id),
+    page_number INTEGER,
+    chapter TEXT,
+    title TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('manual', 'ai_summary', 'highlight', 'agent_insight')),
+    source_message_id INTEGER REFERENCES chat_messages(id),
+    tags TEXT DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 """
 
 _data_dir_override: Path | None = None
