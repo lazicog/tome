@@ -12,6 +12,17 @@ log = structlog.get_logger()
 router = APIRouter(prefix="/books", tags=["books"])
 
 
+def _find_pdf_on_disk(book_id: str, file_name: str):
+    """Resolve the actual PDF path -- files are stored as {book_id}.pdf on disk."""
+    by_id = settings.uploads_dir / f"{book_id}.pdf"
+    if by_id.exists():
+        return by_id
+    by_name = settings.uploads_dir / file_name
+    if by_name.exists():
+        return by_name
+    return None
+
+
 async def _process_book(book_id: str, file_path: str) -> None:
     try:
         await update_book_status(book_id, ProcessingStatus.processing)
@@ -78,8 +89,8 @@ async def reingest_book_endpoint(book_id: str, background_tasks: BackgroundTasks
     if not item:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    file_path = settings.uploads_dir / item.file_name
-    if not file_path.exists():
+    file_path = _find_pdf_on_disk(book_id, item.file_name)
+    if not file_path:
         raise HTTPException(status_code=404, detail="Original PDF file not found on disk")
 
     async def _do_reingest(bid: str, fp: str) -> None:
@@ -101,8 +112,8 @@ async def serve_book_pdf(book_id: str):
     if not item:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    file_path = settings.uploads_dir / item.file_name
-    if not file_path.exists():
+    file_path = _find_pdf_on_disk(book_id, item.file_name)
+    if not file_path:
         raise HTTPException(status_code=404, detail="PDF file not found on disk")
 
     return FileResponse(
