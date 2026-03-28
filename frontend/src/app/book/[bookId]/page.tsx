@@ -2,16 +2,12 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   MessageSquare,
   BookOpen,
   Send,
@@ -32,7 +28,15 @@ import {
 } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+const PdfViewer = dynamic(() => import("../../../components/PdfViewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center h-full text-text-muted">
+      <Loader2 className="w-6 h-6 animate-spin mb-2" />
+      <span className="text-sm">Loading PDF viewer...</span>
+    </div>
+  ),
+});
 
 type Message = { role: "user" | "assistant"; content: string; agentType?: string };
 type SourceChunk = {
@@ -55,10 +59,7 @@ export default function BookPage() {
   const bookId = params.bookId;
 
   const [book, setBook] = useState<Book | null>(null);
-  const [numPages, setNumPages] = useState(0);
-  const [pageNum, setPageNum] = useState(1);
-  const [pdfWidth, setPdfWidth] = useState(600);
-  const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [goToPage, setGoToPage] = useState<number | undefined>(undefined);
 
   const [chatOpen, setChatOpen] = useState(true);
   const [input, setInput] = useState("");
@@ -74,17 +75,6 @@ export default function BookPage() {
   useEffect(() => {
     void getBook(bookId).then(setBook);
   }, [bookId]);
-
-  useEffect(() => {
-    if (!pdfContainerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setPdfWidth(entry.contentRect.width - 16);
-      }
-    });
-    obs.observe(pdfContainerRef.current);
-    return () => obs.disconnect();
-  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -117,10 +107,6 @@ export default function BookPage() {
     setMessages([]);
     setSources([]);
     setError("");
-  };
-
-  const goToPage = (p: number) => {
-    if (p >= 1 && p <= numPages) setPageNum(p);
   };
 
   const send = async () => {
@@ -231,49 +217,8 @@ export default function BookPage() {
       {/* Main split pane */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* PDF Viewer */}
-        <div ref={pdfContainerRef} className={cn("flex flex-col min-h-0", chatOpen ? "w-1/2" : "w-full")}>
-          {/* PDF navigation */}
-          <div className="flex items-center justify-center gap-3 py-2 border-b border-border bg-bg-card/50 shrink-0">
-            <button onClick={() => goToPage(pageNum - 1)} disabled={pageNum <= 1} className="p-1 rounded hover:bg-bg-hover disabled:opacity-30 transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-sm text-text-muted tabular-nums">
-              <input
-                type="number"
-                min={1}
-                max={numPages}
-                value={pageNum}
-                onChange={(e) => goToPage(parseInt(e.target.value) || 1)}
-                className="w-12 text-center bg-bg-input border border-border rounded px-1 py-0.5 text-sm text-text"
-              />
-              <span className="ml-1">/ {numPages || "..."}</span>
-            </span>
-            <button onClick={() => goToPage(pageNum + 1)} disabled={pageNum >= numPages} className="p-1 rounded hover:bg-bg-hover disabled:opacity-30 transition-colors">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* PDF content */}
-          <div className="flex-1 overflow-auto p-2 flex justify-center">
-            <Document
-              file={pdfUrl}
-              onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-              loading={
-                <div className="flex flex-col items-center justify-center py-20 text-text-muted">
-                  <Loader2 className="w-6 h-6 animate-spin mb-2" />
-                  <span className="text-sm">Loading PDF...</span>
-                </div>
-              }
-              error={
-                <div className="flex flex-col items-center justify-center py-20 text-text-muted">
-                  <FileText className="w-8 h-8 mb-2" />
-                  <span className="text-sm">Could not load PDF.</span>
-                </div>
-              }
-            >
-              <Page pageNumber={pageNum} width={pdfWidth > 100 ? pdfWidth : 500} />
-            </Document>
-          </div>
+        <div className={cn("min-h-0", chatOpen ? "w-1/2" : "w-full")}>
+          <PdfViewer url={pdfUrl} goToPage={goToPage} />
         </div>
 
         {/* Chat panel */}
@@ -348,7 +293,7 @@ export default function BookPage() {
                       key={s.chunk_id}
                       onClick={() => {
                         const p = s.page_numbers[0];
-                        if (p) goToPage(p);
+                        if (p) setGoToPage(p);
                       }}
                       className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-input border border-border text-xs text-text-muted hover:text-accent hover:border-accent/40 transition-colors"
                       title={`${s.chapter} - ${s.section} (score: ${s.score.toFixed(3)})`}
