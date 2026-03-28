@@ -19,7 +19,7 @@ async def _session_aware_stream(
     history: list[ChatMessage],
     session_id: str,
 ) -> AsyncIterator[str]:
-    """Wraps the agent stream to persist messages and emit session metadata."""
+    """Wraps the agent stream to persist messages, run tools, and emit session metadata."""
     from app.services.sessions import add_message
 
     await add_message(session_id, "user", message)
@@ -52,6 +52,20 @@ async def _session_aware_stream(
 
     if collected_text:
         await add_message(session_id, "assistant", collected_text, agent_type=agent_type)
+
+    if agent_type == "summarize" and collected_text:
+        from app.services.notes import create_note
+        try:
+            title = f"Notes: {message[:80]}"
+            await create_note(
+                book_id=book_id,
+                content=collected_text,
+                title=title,
+                note_type="ai_summary",
+            )
+            yield _sse_event("note_saved", {"title": title})
+        except Exception:
+            pass
 
 
 @router.post("/{book_id}/chat", summary="Chat with a processed book")
