@@ -104,7 +104,13 @@ def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
     merged.sort(key=lambda x: x["score"], reverse=True)
 
     threshold = settings.retrieval_score_threshold
-    results = [c for c in merged[:k] if c["score"] >= threshold]
+    candidates = [c for c in merged if c["score"] >= threshold]
+
+    if settings.reranker_enabled and candidates:
+        from app.rag.reranker import rerank_chunks
+        results = rerank_chunks(query=query, chunks=candidates, top_k=k)
+    else:
+        results = candidates[:k]
 
     log.info(
         "retriever.search",
@@ -112,8 +118,8 @@ def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
         query=query[:80],
         prefetched=len(docs),
         returned=len(results),
-        top_score=round(results[0]["score"], 4) if results else 0,
-        low_score=round(results[-1]["score"], 4) if results else 0,
+        top_score=round(results[0].get("rerank_score", results[0]["score"]), 4) if results else 0,
+        low_score=round(results[-1].get("rerank_score", results[-1]["score"]), 4) if results else 0,
     )
 
     return results

@@ -1,0 +1,782 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\Celavi\Documents\HelpMeLearn\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Celavi\Documents\HelpMeLearn\backend
+plugins: anyio-4.13.0, langsmith-0.7.22, asyncio-0.26.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 35 items
+
+tests/test_chat_stream_integration.py::test_chat_stream_emits_routed_sse_contract PASSED [  2%]
+tests/test_chat_stream_integration.py::test_chat_stream_emits_fallback_tutor_sse_contract PASSED [  5%]
+tests/test_chat_stream_integration.py::test_chat_returns_404_when_book_missing PASSED [  8%]
+tests/test_chat_stream_integration.py::test_chat_returns_400_when_book_not_ready[queued] PASSED [ 11%]
+tests/test_chat_stream_integration.py::test_chat_returns_400_when_book_not_ready[processing] PASSED [ 14%]
+tests/test_chat_stream_integration.py::test_chat_returns_400_when_book_not_ready[failed] PASSED [ 17%]
+tests/test_chat_stream_integration.py::test_upload_to_ready_to_routed_chat_flow PASSED [ 20%]
+tests/test_chat_stream_integration.py::test_chat_stream_routes_expected_agent_intent[Explain semantic chunking simply.-explain] PASSED [ 22%]
+tests/test_chat_stream_integration.py::test_chat_stream_routes_expected_agent_intent[Show me a code example for embeddings.-example] PASSED [ 25%]
+tests/test_chat_stream_integration.py::test_chat_stream_routes_expected_agent_intent[I am unfamiliar with cosine similarity, give me background first.-context] PASSED [ 28%]
+tests/test_router.py::test_classify_intent_example PASSED                [ 31%]
+tests/test_router.py::test_classify_intent_context PASSED                [ 34%]
+tests/test_router.py::test_classify_intent_default_explain PASSED        [ 37%]
+tests/test_router.py::test_classify_intent_ignores_history_for_routing PASSED [ 40%]
+tests/test_router.py::test_classify_intent_phrase_matrix[Give me a simple example of retrieval augmentation.-example] PASSED [ 42%]
+tests/test_router.py::test_classify_intent_phrase_matrix[Can you show me a code snippet for this?-example] PASSED [ 45%]
+tests/test_router.py::test_classify_intent_phrase_matrix[I need background before I learn this topic.-context] PASSED [ 48%]
+tests/test_router.py::test_classify_intent_phrase_matrix[What are the prerequisites for this concept?-context] PASSED [ 51%]
+tests/test_router.py::test_classify_intent_phrase_matrix[Explain semantic chunking tradeoffs.-explain] PASSED [ 54%]
+tests/test_router.py::test_route_intent_fallbacks PASSED                 [ 57%]
+tests/test_sessions.py::test_create_and_get_session ERROR                [ 60%]
+tests/test_sessions.py::test_get_nonexistent_session FAILED              [ 62%]
+tests/test_sessions.py::test_list_sessions ERROR                         [ 65%]
+tests/test_sessions.py::test_add_and_get_messages ERROR                  [ 68%]
+tests/test_sessions.py::test_empty_session_messages ERROR                [ 71%]
+tests/test_sessions.py::test_add_message_updates_session_timestamp ERROR [ 74%]
+tests/test_sse_contract.py::test_sse_token_event_shape PASSED            [ 77%]
+tests/test_sse_contract.py::test_sse_sources_event_shape PASSED          [ 80%]
+tests/test_sse_contract.py::test_sse_agent_event_shape PASSED            [ 82%]
+tests/test_sse_contract.py::test_sse_done_event_shape PASSED             [ 85%]
+tests/test_storage_db.py::test_create_and_get_book FAILED                [ 88%]
+tests/test_storage_db.py::test_get_nonexistent_book FAILED               [ 91%]
+tests/test_storage_db.py::test_list_books_pagination FAILED              [ 94%]
+tests/test_storage_db.py::test_update_book_status FAILED                 [ 97%]
+tests/test_storage_db.py::test_update_nonexistent_book_is_noop FAILED    [100%]
+
+=================================== ERRORS ====================================
+________________ ERROR at setup of test_create_and_get_session ________________
+
+_fresh_db = None
+
+    @pytest_asyncio.fixture
+    async def book_id(_fresh_db):
+        """Create a book and return its id for session tests."""
+        from app.services.storage_db import create_book
+    
+>       book, _ = await create_book("session-test.pdf")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sessions.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'session-test.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-18, started 22044)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-18, started 22044)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-18, started 22044)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+____________________ ERROR at setup of test_list_sessions _____________________
+
+_fresh_db = None
+
+    @pytest_asyncio.fixture
+    async def book_id(_fresh_db):
+        """Create a book and return its id for session tests."""
+        from app.services.storage_db import create_book
+    
+>       book, _ = await create_book("session-test.pdf")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sessions.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'session-test.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-24, started 4436)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-24, started 4436)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-24, started 4436)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+_________________ ERROR at setup of test_add_and_get_messages _________________
+
+_fresh_db = None
+
+    @pytest_asyncio.fixture
+    async def book_id(_fresh_db):
+        """Create a book and return its id for session tests."""
+        from app.services.storage_db import create_book
+    
+>       book, _ = await create_book("session-test.pdf")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sessions.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'session-test.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-27, started 21548)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-27, started 21548)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-27, started 21548)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+________________ ERROR at setup of test_empty_session_messages ________________
+
+_fresh_db = None
+
+    @pytest_asyncio.fixture
+    async def book_id(_fresh_db):
+        """Create a book and return its id for session tests."""
+        from app.services.storage_db import create_book
+    
+>       book, _ = await create_book("session-test.pdf")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sessions.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'session-test.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-30, started 4716)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-30, started 4716)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-30, started 4716)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+________ ERROR at setup of test_add_message_updates_session_timestamp _________
+
+_fresh_db = None
+
+    @pytest_asyncio.fixture
+    async def book_id(_fresh_db):
+        """Create a book and return its id for session tests."""
+        from app.services.storage_db import create_book
+    
+>       book, _ = await create_book("session-test.pdf")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sessions.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'session-test.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-33, started 2596)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-33, started 2596)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-33, started 2596)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+================================== FAILURES ===================================
+________________________ test_get_nonexistent_session _________________________
+
+_fresh_db = None
+
+    @pytest.mark.asyncio
+    async def test_get_nonexistent_session(_fresh_db):
+        from app.services.sessions import get_session
+    
+>       result = await get_session("does-not-exist")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sessions.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session_id = 'does-not-exist'
+
+    async def get_session(session_id: str) -> dict | None:
+        await init_db()
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\sessions.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-21, started 23604)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-21, started 23604)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-21, started 23604)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+__________________________ test_create_and_get_book ___________________________
+
+    @pytest.mark.asyncio
+    @pytest.mark.usefixtures("_fresh_db")
+    async def test_create_and_get_book():
+        from app.services.storage_db import create_book, get_book
+    
+>       book, file_path = await create_book("test-book.pdf")
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_storage_db.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'test-book.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-36, started 23620)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-36, started 23620)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-36, started 23620)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+__________________________ test_get_nonexistent_book __________________________
+
+    @pytest.mark.asyncio
+    @pytest.mark.usefixtures("_fresh_db")
+    async def test_get_nonexistent_book():
+        from app.services.storage_db import get_book
+    
+>       result = await get_book("does-not-exist")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_storage_db.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+book_id = 'does-not-exist'
+
+    async def get_book(book_id: str) -> BookResponse | None:
+        await init_db()
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-39, started 2644)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-39, started 2644)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-39, started 2644)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+_________________________ test_list_books_pagination __________________________
+
+    @pytest.mark.asyncio
+    @pytest.mark.usefixtures("_fresh_db")
+    async def test_list_books_pagination():
+        from app.services.storage_db import create_book, list_books
+    
+        for i in range(5):
+>           await create_book(f"book-{i}.pdf")
+
+tests\test_storage_db.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'book-0.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-42, started 4440)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-42, started 4440)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-42, started 4440)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+___________________________ test_update_book_status ___________________________
+
+    @pytest.mark.asyncio
+    @pytest.mark.usefixtures("_fresh_db")
+    async def test_update_book_status():
+        from app.services.storage_db import create_book, get_book, update_book_status
+    
+>       book, _ = await create_book("status-test.pdf")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_storage_db.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+file_name = 'status-test.pdf'
+
+    async def create_book(file_name: str) -> tuple[BookResponse, Path]:
+        await init_db()
+        book_id = uuid.uuid4().hex
+        uploads = get_uploads_dir()
+        file_path = uploads / f"{book_id}.pdf"
+        now = datetime.now(timezone.utc).isoformat()
+    
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-45, started 21744)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-45, started 21744)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-45, started 21744)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+____________________ test_update_nonexistent_book_is_noop _____________________
+
+    @pytest.mark.asyncio
+    @pytest.mark.usefixtures("_fresh_db")
+    async def test_update_nonexistent_book_is_noop():
+        from app.services.storage_db import update_book_status
+    
+>       await update_book_status("ghost-id", ProcessingStatus.ready, chunks=10)
+
+tests\test_storage_db.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+book_id = 'ghost-id', status = <ProcessingStatus.ready: 'ready'>, chunks = 10
+
+    async def update_book_status(book_id: str, status: ProcessingStatus, chunks: int = 0) -> None:
+        await init_db()
+>       async with await get_connection() as conn:
+                   ^^^^^^^^^^^^^^^^^^^^^^
+
+app\services\storage_db.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-48, started 24352)>
+
+    async def __aenter__(self) -> "Connection":
+>       return await self
+               ^^^^^^^^^^
+
+.venv\Lib\site-packages\aiosqlite\core.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-48, started 24352)>
+
+    def __await__(self) -> Generator[Any, None, "Connection"]:
+>       self.start()
+
+.venv\Lib\site-packages\aiosqlite\core.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Connection(Thread-48, started 24352)>
+
+    def start(self):
+        """Start the thread's activity.
+    
+        It must be called at most once per thread object. It arranges for the
+        object's run() method to be invoked in a separate thread of control.
+    
+        This method will raise a RuntimeError if called more than once on the
+        same thread object.
+    
+        """
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+    
+        if self._started.is_set():
+>           raise RuntimeError("threads can only be started once")
+E           RuntimeError: threads can only be started once
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\threading.py:989: RuntimeError
+============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: builtin type SwigPyPacked has no __module__ attribute
+
+<frozen importlib._bootstrap>:488
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: builtin type SwigPyObject has no __module__ attribute
+
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_sessions.py::test_get_nonexistent_session - RuntimeError: t...
+FAILED tests/test_storage_db.py::test_create_and_get_book - RuntimeError: thr...
+FAILED tests/test_storage_db.py::test_get_nonexistent_book - RuntimeError: th...
+FAILED tests/test_storage_db.py::test_list_books_pagination - RuntimeError: t...
+FAILED tests/test_storage_db.py::test_update_book_status - RuntimeError: thre...
+FAILED tests/test_storage_db.py::test_update_nonexistent_book_is_noop - Runti...
+ERROR tests/test_sessions.py::test_create_and_get_session - RuntimeError: thr...
+ERROR tests/test_sessions.py::test_list_sessions - RuntimeError: threads can ...
+ERROR tests/test_sessions.py::test_add_and_get_messages - RuntimeError: threa...
+ERROR tests/test_sessions.py::test_empty_session_messages - RuntimeError: thr...
+ERROR tests/test_sessions.py::test_add_message_updates_session_timestamp - Ru...
+============= 6 failed, 24 passed, 5 warnings, 5 errors in 10.89s =============

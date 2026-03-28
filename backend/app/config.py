@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     top_k_chunks: int = 8
     retrieval_prefetch_multiplier: int = 5
     retrieval_score_threshold: float = 0.15
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    reranker_enabled: bool = True
+    query_rewrite_enabled: bool = True
     phase2_routing_enabled: bool = True
     use_sqlite_storage: bool = False
 
