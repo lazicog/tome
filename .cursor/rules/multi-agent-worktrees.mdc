@@ -1,0 +1,17 @@
+---
+description: Standards for parallel Cursor agents using separate git worktrees
+alwaysApply: true
+---
+
+# Multi-Agent Worktree Standards
+
+When running parallel agents:
+
+- Use one branch/worktree per feature slice.
+- Keep each branch scoped to one logical unit of work.
+- Require reviewer pass before merge for medium/high-risk changes.
+- Call out shared contract changes explicitly (`API`, `SSE`, schema).
+- Run targeted tests in each branch; run cross-feature smoke checks during integration.
+- Update `docs/SESSION-HANDOFF.md` after integration milestones.
+
+Reference workflow: `docs/workflows/multi-agent-worktree-playbook.md`.

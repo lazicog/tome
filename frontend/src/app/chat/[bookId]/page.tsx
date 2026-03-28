@@ -6,6 +6,13 @@ import { useState } from "react";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 type Message = { role: "user" | "assistant"; content: string };
+type SourceChunk = {
+  chunk_id: string;
+  chapter: string;
+  section: string;
+  page_numbers: number[];
+  score: number;
+};
 
 function toAgentLabel(agentType: string): string {
   if (agentType === "example") return "Example Agent";
@@ -17,7 +24,7 @@ export default function ChatPage() {
   const params = useParams<{ bookId: string }>();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Array<Message & { agentType?: string }>>([]);
-  const [sources, setSources] = useState<string>("");
+  const [sources, setSources] = useState<SourceChunk[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,6 +36,7 @@ export default function ChatPage() {
     setInput("");
     setSending(true);
     setError("");
+    setSources([]);
 
     const res = await fetch(`${API}/books/${params.bookId}/chat`, {
       method: "POST",
@@ -87,7 +95,12 @@ export default function ChatPage() {
           });
         }
         if (event === "sources") {
-          setSources(data);
+          try {
+            const parsed = JSON.parse(data) as SourceChunk[];
+            setSources(parsed);
+          } catch {
+            setSources([]);
+          }
         }
       }
     }
@@ -121,10 +134,22 @@ export default function ChatPage() {
       </div>
       {error ? <p style={{ color: "#fca5a5" }}>{error}</p> : null}
 
-      {sources ? (
-        <pre style={{ marginTop: "1rem", whiteSpace: "pre-wrap", background: "#111827", padding: "0.8rem", borderRadius: 8 }}>
-          Sources: {sources}
-        </pre>
+      {sources.length > 0 ? (
+        <div style={{ marginTop: "1rem", border: "1px solid #334155", borderRadius: 8, padding: "0.8rem" }}>
+          <strong>Sources</strong>
+          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+            {sources.map((source) => (
+              <div key={source.chunk_id} style={{ background: "#111827", borderRadius: 8, padding: "0.7rem" }}>
+                <div style={{ fontSize: 13, opacity: 0.9 }}>
+                  {source.chapter} - {source.section}
+                </div>
+                <div style={{ fontSize: 13, marginTop: 4 }}>
+                  Pages: {source.page_numbers.join(", ")} | Score: {source.score.toFixed(4)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : null}
     </section>
   );

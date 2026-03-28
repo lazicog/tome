@@ -77,6 +77,8 @@ At the start of the next session, say:
   - API integration test added for routed chat SSE event order (`agent` -> `token` -> `sources` -> `done`)
   - API integration test added for fallback Tutor path with routing disabled
   - API integration test added for upload -> ready -> routed chat flow
+  - Frontend chat now renders parsed source cards (chapter/section/pages/score) instead of raw JSON
+  - Multi-agent worktree playbook and role-specialized project skills are now in repo
 
 ## Important decisions already made
 
@@ -121,5 +123,5 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 ## Suggested next work
 
 1. Complete Phase 2 checklist implementation and validation from the approved spec
-2. Add user-facing source rendering improvements on the chat page (source cards/links)
+2. Use the multi-agent playbook to parallelize remaining Phase 2 items by branch/worktree
 3. Introduce persistent progress tracking (SQLite) once routing is stable

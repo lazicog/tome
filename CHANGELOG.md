@@ -32,6 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - API-level routed chat integration test for SSE event ordering (`agent` -> `token` -> `sources` -> `done`)
 - API-level fallback Tutor chat integration test when routing is disabled (`phase2_routing_enabled=false`)
 - API-level upload -> ready -> routed chat integration test (book lifecycle plus SSE stream contract)
+- Multi-agent collaboration assets:
+  - `docs/workflows/multi-agent-worktree-playbook.md`
+  - specialized Cursor skills for coordinator, feature builder, reviewer, and integration manager
 
 ### Changed
 - Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready
@@ -39,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Backend streaming utility now supports prompt-driven routed responses while preserving SSE event contract
 - Chat UI now displays routed assistant label (`Tutor`, `Example Agent`, `Context Enricher`) from backend stream events
 - Example Generator and Context Enricher prompts are tuned for clearer role-specific behavior
+- Chat UI now renders structured source cards (chapter/section/pages/score) instead of raw source JSON
 
 ### Fixed
 - Upload endpoint now enforces max upload size and rejects empty uploads with clear errors

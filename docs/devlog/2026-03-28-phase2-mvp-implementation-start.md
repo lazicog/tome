@@ -34,6 +34,14 @@
 - Added API-level upload lifecycle integration coverage:
   - new test exercises upload -> ready status -> routed chat stream flow
   - test uses mocked storage/processing + routed stream dependencies for deterministic behavior
+- Improved chat source UX on frontend:
+  - parse `sources` SSE payload into structured typed entries
+  - render source cards with chapter/section/page numbers and retrieval score
+  - clear prior source list at the start of each new user turn
+- Added multi-agent parallel development assets:
+  - worktree collaboration playbook at `docs/workflows/multi-agent-worktree-playbook.md`
+  - project skills for `multi-agent-coordinator`, `worktree-feature-builder`, `pr-review-guardian`, and `worktree-integration-manager`
+  - role-based templates/checklists for handoff, review findings, and merge integration logs
 
 ## Key decisions made
 
