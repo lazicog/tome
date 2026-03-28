@@ -59,17 +59,29 @@ At the start of the next session, say:
 - Reingest endpoint: `POST /api/books/{book_id}/reingest` (deletes + re-ingests with new pipeline)
 - PDF serve endpoint: `GET /api/books/{book_id}/pdf` (serves uploaded PDF to frontend viewer)
 
-### Frontend Redesign - COMPLETE
+### Frontend Redesign + UX Polish - COMPLETE
 
 - Tailwind CSS v4 + PostCSS configured with custom dark theme tokens
 - Utility libraries: `clsx`, `tailwind-merge`, `class-variance-authority`, `lucide-react`
 - Responsive nav bar with sticky positioning and backdrop blur
-- Home/library page: drag-and-drop upload zone, book cards with status badges, re-ingest button
+- Home/library page:
+  - Drag-and-drop upload zone, book cards with status badges + created date
+  - Re-ingest button, delete book button with confirmation
+  - Toast notifications for upload, reingest, delete actions
+  - Better empty state with icon
 - Split-pane book study page (`/book/[bookId]`):
-  - Left panel: PDF reader with `react-pdf`, page navigation, resize-aware width
-  - Right panel: Chat with session tabs, markdown rendering (`react-markdown`), source chips that link to PDF pages
+  - Left panel: PDF reader via iframe (browser-native), smooth page navigation without cover flash
+  - Right panel: Chat with session tabs, markdown rendering (`react-markdown`), source chips with chapter names
+  - Resizable split pane with drag handle (25%-75% range)
   - Toggle button to show/hide chat panel
-- Old `/chat/[bookId]` route still exists for backward compat but new route is `/book/[bookId]`
+- Chat UX:
+  - Auto-expanding textarea with Shift+Enter for newlines, Enter to send
+  - Starter suggestion chips in empty state ("Explain the main concepts", "Quiz me", etc.)
+  - Typing indicator (pulsing dots) before first token arrives
+  - Dark theme markdown styling: code blocks, headings, tables, blockquotes
+  - Keyboard shortcut hint below input
+- Delete book API: `DELETE /api/books/{book_id}` with cascade (PDF, embeddings, DB record)
+- Old `/chat/[bookId]` route removed
 
 ## Test suite summary
 
@@ -85,26 +97,33 @@ At the start of the next session, say:
 
 ## Key files added/changed this session
 
-### New files (RAG overhaul + frontend redesign)
+### New files (RAG overhaul + frontend redesign + UX polish)
 - `backend/app/api/routes/debug.py` - Debug retrieve endpoint
 - `frontend/postcss.config.mjs` - PostCSS config for Tailwind v4
-- `frontend/src/app/globals.css` - Tailwind imports + dark theme tokens
+- `frontend/src/app/globals.css` - Tailwind imports + dark theme tokens + prose styles + animations
 - `frontend/src/lib/utils.ts` - `cn()` utility (clsx + tailwind-merge)
 - `frontend/src/app/book/[bookId]/page.tsx` - Split-pane book reader + chat
+- `frontend/src/components/PdfViewer.tsx` - Iframe-based PDF viewer with smooth navigation
 
-### Modified files (RAG overhaul + frontend redesign)
+### Modified files (RAG overhaul + frontend redesign + UX polish)
 - `backend/app/rag/embeddings.py` - Removed silent fallback, added structlog
 - `backend/app/rag/retriever.py` - Added logging, prefetch, score threshold, delete_collection
 - `backend/app/rag/processor.py` - New `extract_pdf_pages()` with font metadata, kept legacy compat
 - `backend/app/rag/chunker.py` - New `chunk_pages_rich()` heading-aware chunker, kept legacy compat
 - `backend/app/rag/ingest.py` - Uses rich pipeline, added `reingest_book()`
-- `backend/app/api/routes/books.py` - Added reingest + PDF serve endpoints
+- `backend/app/api/routes/books.py` - Reingest, PDF serve, delete endpoints + `_find_pdf_on_disk` helper
 - `backend/app/main.py` - Lifespan startup diagnostics, debug router registered
-- `backend/app/config.py` - `top_k_chunks=8`, `retrieval_prefetch_multiplier=5`, `retrieval_score_threshold=0.15`
+- `backend/app/config.py` - Retrieval tuning params
+- `backend/app/services/storage.py` - Added `delete_book`
+- `backend/app/services/storage_db.py` - Added `delete_book`
+- `backend/app/services/storage_provider.py` - Re-exports `delete_book`
 - `frontend/src/app/layout.tsx` - Tailwind-based layout with nav bar
-- `frontend/src/app/page.tsx` - Redesigned library with cards, badges, upload zone
-- `frontend/src/lib/api.ts` - Added `getBook`, `reingestBook`, `getBookPdfUrl`, `getApiBase`
+- `frontend/src/app/page.tsx` - Library with cards, badges, upload zone, toast, delete
+- `frontend/src/lib/api.ts` - Added `getBook`, `reingestBook`, `deleteBook`, `getBookPdfUrl`, `getApiBase`
 - `.gitignore` - Added `*.pdf` for test PDFs
+
+### Deleted files
+- `frontend/src/app/chat/[bookId]/page.tsx` - Replaced by `/book/[bookId]`
 
 ### Previous session files (still present)
 - `backend/app/agents/quiz_master.py` - Quiz Master prompt
@@ -124,7 +143,8 @@ At the start of the next session, say:
 - Silent embedding fallback removed (errors surface immediately for debugging)
 - Heading detection uses font size ratios: chapter >= 1.4x body, section >= 1.1x body
 - Frontend uses Tailwind CSS v4 + custom theme tokens (not shadcn/ui component library install, just its utility pattern)
-- `react-pdf` for client-side PDF rendering; PDF served from backend `/api/books/{book_id}/pdf`
+- Switched from `react-pdf` to browser-native iframe PDF rendering (pdfjs-dist incompatible with Next.js 15 webpack)
+- PDF served from backend `/api/books/{book_id}/pdf` with `Content-Disposition: inline`
 
 See ADRs:
 - `docs/adr/0001-langchain-over-litellm.md`
