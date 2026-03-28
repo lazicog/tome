@@ -1,9 +1,11 @@
+import structlog
 import chromadb
 from rank_bm25 import BM25Okapi
 
 from app.config import settings
 from app.rag.embeddings import embed_query
 
+log = structlog.get_logger()
 
 client = chromadb.PersistentClient(path=str(settings.chroma_dir))
 
@@ -13,7 +15,6 @@ def _collection_name(book_id: str) -> str:
 
 
 def _to_chroma_metadata(metadata: dict) -> dict:
-    # Chroma accepts only scalar metadata values.
     page_numbers = metadata.get("page_numbers", [])
     if isinstance(page_numbers, list):
         page_numbers_value = ",".join(str(x) for x in page_numbers)
@@ -57,17 +58,28 @@ def add_chunks(book_id: str, chunks: list[dict], embeddings: list[list[float]]) 
     )
 
 
+def delete_collection(book_id: str) -> None:
+    name = _collection_name(book_id)
+    try:
+        client.delete_collection(name=name)
+        log.info("retriever.collection_deleted", book_id=book_id)
+    except Exception:
+        log.warning("retriever.collection_not_found", book_id=book_id)
+
+
 def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
     collection = client.get_or_create_collection(name=_collection_name(book_id), metadata={"hnsw:space": "cosine"})
     query_vec = embed_query(query)
 
-    vector = collection.query(query_embeddings=[query_vec], n_results=k * 3)
+    prefetch = k * settings.retrieval_prefetch_multiplier
+    vector = collection.query(query_embeddings=[query_vec], n_results=prefetch)
     docs = vector.get("documents", [[]])[0]
     metas = vector.get("metadatas", [[]])[0]
     ids = vector.get("ids", [[]])[0]
     distances = vector.get("distances", [[]])[0]
 
     if not docs:
+        log.warning("retriever.no_results", book_id=book_id, query=query[:80])
         return []
 
     tokenized = [d.split() for d in docs]
@@ -90,4 +102,18 @@ def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
         )
 
     merged.sort(key=lambda x: x["score"], reverse=True)
-    return merged[:k]
+
+    threshold = settings.retrieval_score_threshold
+    results = [c for c in merged[:k] if c["score"] >= threshold]
+
+    log.info(
+        "retriever.search",
+        book_id=book_id,
+        query=query[:80],
+        prefetched=len(docs),
+        returned=len(results),
+        top_score=round(results[0]["score"], 4) if results else 0,
+        low_score=round(results[-1]["score"], 4) if results else 0,
+    )
+
+    return results
