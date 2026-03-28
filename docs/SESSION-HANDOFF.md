@@ -12,7 +12,6 @@ At the start of the next session, say:
 
 - Project: `tome` ([https://github.com/lazicog/tome](https://github.com/lazicog/tome))
 - Branch: `master`
-- Latest pushed commit at handoff start: `f37aefa`
 - Workflow: solo mode direct commits to `master`
 
 ## What is completed
@@ -20,79 +19,85 @@ At the start of the next session, say:
 ### Foundation and conventions
 
 - Cursor rules and skills are set up
-- Spec-first workflow is configured:
-  - Rule: `.cursor/rules/specs.mdc`
-  - Skill: `.cursor/skills/spec-authoring/SKILL.md`
-  - Specs directory: `docs/specs/`
-- Documentation system is active:
-  - ADRs in `docs/adr/`
-  - Devlog in `docs/devlog/`
-  - Changelog in `CHANGELOG.md`
+- Spec-first workflow configured
+- Documentation system active: ADRs, devlog, changelog
 
-### Phase 1 (scaffold + hardening)
+### Phase 1 (scaffold + hardening) - COMPLETE
 
-- Backend created under `backend/app/`
-  - FastAPI app in `backend/app/main.py`
-  - Endpoints:
-    - `GET /api/health`
-    - `GET /api/books`
-    - `POST /api/books` (PDF upload + background processing)
-    - `GET /api/books/{book_id}`
-    - `POST /api/books/{book_id}/chat` (SSE stream)
-  - RAG pipeline:
-    - PDF extraction: `backend/app/rag/processor.py`
-    - Chunking: `backend/app/rag/chunker.py`
-    - Embeddings: `backend/app/rag/embeddings.py`
-    - Storage/retrieval: `backend/app/rag/retriever.py`
-    - Ingestion orchestrator: `backend/app/rag/ingest.py`
-  - Tutor streaming:
-    - `backend/app/agents/tutor.py`
-  - LLM abstraction (LangChain):
-    - `backend/app/services/llm.py`
+- FastAPI backend with health, books, chat endpoints
+- RAG pipeline: PyMuPDF -> chunking -> embeddings -> ChromaDB -> hybrid retrieval
+- Tutor agent with SSE streaming
+- Next.js frontend with library/upload and chat pages
+- Upload validation, CORS fixes, SSE robustness
 
-- Frontend created under `frontend/`
-  - Book library/upload page: `frontend/src/app/page.tsx`
-  - Chat page: `frontend/src/app/chat/[bookId]/page.tsx`
-  - API client: `frontend/src/lib/api.ts`
+### Phase 2 MVP (Router + 4 Agents) - COMPLETE
 
-- Hardening completed:
-  - Upload size/empty-file validation
-  - CORS for both `localhost` and `127.0.0.1`
-  - Chroma metadata scalar serialization fix
-  - SSE framing/parsing robustness improvements
-  - Polling while books are processing
+- LangGraph orchestration: retrieve -> route -> agent prep -> stream
+- 4 intent types: `explain`, `example`, `context`, `quiz`
+- Agents: Tutor, Example Generator, Context Enricher, Quiz Master
+- Router: deterministic keyword matching, context > quiz > example > explain fallback
+- Config flag: `phase2_routing_enabled` (default `True`)
+- Frontend: agent labels, structured source cards, page filters, copy-citation
 
-### Phase 2 MVP (in progress)
+### SQLite Progress-Tracking + Session Persistence - COMPLETE
 
-- Spec finalized:
-  - `docs/specs/2026-03-28-phase2-mvp-router-3-agents.md`
-- Implementation started:
-  - Router intent classifier: `backend/app/agents/router.py`
-  - Specialized prompts: `backend/app/agents/example_gen.py`, `backend/app/agents/context_enricher.py`
-  - LangGraph orchestration: `backend/app/agents/graph.py`
-  - Chat route wired to routed flow: `backend/app/api/routes/chat.py`
-  - Chat stream now emits explicit routed `agent` event and frontend shows agent label
-  - Router intent logic hardened to use current user query (history no longer biases intent)
-  - Test coverage expanded for router phrase variants and SSE event contract (`agent`, `token`, `sources`, `done`)
-  - API integration test added for routed chat SSE event order (`agent` -> `token` -> `sources` -> `done`)
-  - API integration test added for fallback Tutor path with routing disabled
-  - API integration test added for upload -> ready -> routed chat flow
-  - Frontend chat now renders parsed source cards (chapter/section/pages/score) instead of raw JSON
-  - API routed intent matrix test coverage added for `explain`/`example`/`context`
-  - Routed integration tests now assert `sources` is emitted once with required source keys
-  - Chat API integration tests now cover `404` missing book and `400` non-ready book paths
-  - Non-ready path tests now include `queued`, `processing`, and `failed` statuses
-  - Frontend source cards now support page filters and copy-citation actions
-  - Frontend chat stream handling now clears loading state via `finally` on stream/parse errors
-  - Multi-agent worktree playbook and role-specialized project skills are now in repo
-  - Frontend chat regression checklist is available at `docs/workflows/frontend-chat-regression-checklist.md`
+- Database module with 3-table schema: `books`, `chat_sessions`, `chat_messages`
+- Storage provider layer for transparent JSON/SQLite switching
+- JSON-to-SQLite migration helper
+- Session-aware chat: creates sessions, persists messages, emits `session` SSE event
+- Session resume: `session_id` in chat request loads history from DB
+- Session API: `GET /api/sessions/book/{book_id}`, `GET /api/sessions/{session_id}/messages`
+- Config flag: `use_sqlite_storage` (default `False`, ready to enable)
+- Frontend: sessions sidebar with resume/new-session controls
+
+## Test suite summary
+
+| Test file | Tests | Status |
+|-----------|-------|--------|
+| `test_chat_stream_integration.py` | 11 | Pass |
+| `test_router.py` | 16 | Pass |
+| `test_session_chat_integration.py` | 5 | Pass |
+| `test_sessions.py` | 6 | Pass |
+| `test_sse_contract.py` | 4 | Pass |
+| `test_storage_db.py` | 5 | Pass |
+| **Total** | **46** | **All pass** |
+
+## Key files added/changed this session
+
+### New files
+- `backend/app/agents/quiz_master.py` - Quiz Master prompt
+- `backend/app/api/routes/sessions.py` - Session list/messages endpoints
+- `backend/app/services/storage_provider.py` - JSON/SQLite storage switch
+- `backend/app/services/migrate.py` - JSON-to-SQLite migration
+- `backend/tests/test_session_chat_integration.py` - Session-aware chat tests
+- `docs/specs/2026-03-28-sqlite-progress-tracking.md`
+- `docs/specs/2026-03-28-quiz-master-agent.md`
+- `docs/devlog/2026-03-28-phase2-mvp-complete.md`
+- `docs/devlog/2026-03-28-sqlite-progress-tracking-foundation.md`
+- `docs/devlog/2026-03-28-session-persistence-and-quiz-master.md`
+
+### Modified files
+- `backend/app/agents/router.py` - Added quiz intent
+- `backend/app/agents/graph.py` - Added quiz_prep node
+- `backend/app/api/routes/chat.py` - Session-aware streaming
+- `backend/app/api/routes/books.py` - Uses storage_provider
+- `backend/app/main.py` - Sessions router registered
+- `backend/app/config.py` - `use_sqlite_storage` flag
+- `backend/app/schemas.py` - SessionResponse, session_id in ChatRequest
+- `backend/requirements.txt` - aiosqlite, pytest-asyncio, pytest pinned
+- `backend/tests/test_router.py` - Quiz intent tests
+- `backend/tests/test_chat_stream_integration.py` - Quiz SSE test
+- `frontend/src/lib/api.ts` - Session API helpers
+- `frontend/src/app/chat/[bookId]/page.tsx` - Session sidebar + Quiz Master label
+- `frontend/src/app/page.tsx` - Updated branding
 
 ## Important decisions already made
 
-- Do not use LiteLLM
-- Use LangChain chat models (`ChatOpenAI`, `ChatAnthropic`, `ChatOllama`)
-- Solo workflow for now: direct commits to `master`
-- Branch/PR workflow only when contributors join
+- Do not use LiteLLM; use LangChain chat models
+- Solo workflow: direct commits to `master`
+- `aiosqlite` for async SQLite; `pytest<9` required by `pytest-asyncio` 0.26.0
+- Storage provider pattern for transparent backend swap
+- Quiz classification uses keyword matching consistent with existing router
 
 See ADRs:
 - `docs/adr/0001-langchain-over-litellm.md`
@@ -122,13 +127,14 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 
 ## Known gotchas
 
-- Port conflict on backend startup (`WinError 10048`) means another process is using `8000`
-  - find: `netstat -ano | findstr :8000`
-  - kill: `taskkill /PID <PID> /F`
+- Port conflict on backend startup (`WinError 10048`): `netstat -ano | findstr :8000` then `taskkill /PID <PID> /F`
 - Browser origin mismatch (`localhost` vs `127.0.0.1`) can trigger CORS issues
+- `pytest-asyncio` 0.26.0 needs `pytest<9`; pinned at 8.4.2
 
 ## Suggested next work
 
-1. Complete Phase 2 checklist implementation and validation from the approved spec
-2. Use the multi-agent playbook to parallelize remaining Phase 2 items by branch/worktree
-3. Introduce persistent progress tracking (SQLite) once routing is stable
+1. Enable `use_sqlite_storage=True` by default and run JSON-to-SQLite migration
+2. Add quiz answer evaluation flow (user answers -> Quiz Master grades and explains)
+3. Plan Study Planner agent for structured learning paths
+4. Add learning progress / mastery tracking tables to SQLite schema
+5. Consider spaced repetition scheduling based on quiz scores

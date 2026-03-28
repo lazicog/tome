@@ -7,6 +7,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- SQLite progress-tracking foundation:
+  - Database schema for books, chat sessions, and chat messages
+  - Async service layer for book CRUD (`storage_db.py`) and session/message CRUD (`sessions.py`)
+  - Config flag `use_sqlite_storage` for opt-in SQLite backend (default off)
+  - Storage provider layer (`storage_provider.py`) for transparent JSON/SQLite switching
+  - JSON-to-SQLite migration helper (`migrate.py`)
+  - Unit tests for all SQLite service operations
+- Session-aware chat:
+  - Chat route creates sessions and persists user/assistant messages when SQLite is enabled
+  - `session` SSE event emits session ID to frontend
+  - Session resume via `session_id` field in chat request (loads history from DB)
+- Session API endpoints:
+  - `GET /api/sessions/book/{book_id}` lists sessions with message counts
+  - `GET /api/sessions/{session_id}/messages` retrieves full conversation history
+- Quiz Master agent:
+  - `quiz` intent in router (keywords: quiz, test me, assess, practice, etc.)
+  - `QUIZ_PROMPT` generates 3-5 mixed questions from RAG context
+  - `quiz_prep` node integrated into LangGraph orchestration graph
+- Frontend session sidebar:
+  - Sessions list with resume and new-session controls
+  - Enter key support for sending messages
+  - Updated home page branding
+
+### Changed
+- Router now classifies 4 intents: `context` > `quiz` > `example` > `explain` (fallback)
+- Chat UI agent label map now includes "Quiz Master" for quiz intent
+- Books and chat routes now import from `storage_provider` instead of `storage` directly
+
+## [0.2.0] - 2026-03-28
+
+Phase 2 MVP: Router + 3 Specialized Agents
+
+### Added
 - Project architecture and phased implementation plan
 - 6 Cursor rules for automated code convention enforcement (project overview, Python backend, agent development, RAG pipeline, frontend Next.js, API design)
 - 4 Cursor skills for domain expertise (LangGraph agents, PDF RAG pipeline, LangChain LLM providers, open-source packaging)

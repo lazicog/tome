@@ -55,8 +55,8 @@ export default function HomePage() {
 
   return (
     <section>
-      <h1 style={{ marginTop: 0 }}>Tome - Phase 1</h1>
-      <p>Upload a technical PDF and chat with it.</p>
+      <h1 style={{ marginTop: 0 }}>Tome</h1>
+      <p>Upload a technical PDF and learn with AI-powered tutoring, examples, and quizzes.</p>
 
       <label style={{ display: "inline-block", padding: "0.8rem 1rem", background: "#1e293b", borderRadius: 8, cursor: "pointer" }}>
         Upload PDF
