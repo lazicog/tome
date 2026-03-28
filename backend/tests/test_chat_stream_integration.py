@@ -131,9 +131,10 @@ def test_chat_returns_404_when_book_missing(monkeypatch) -> None:
     assert response.json() == {"detail": "Book not found"}
 
 
-def test_chat_returns_400_when_book_not_ready(monkeypatch) -> None:
+@pytest.mark.parametrize("status", [ProcessingStatus.queued, ProcessingStatus.processing, ProcessingStatus.failed])
+def test_chat_returns_400_when_book_not_ready(monkeypatch, status: ProcessingStatus) -> None:
     async def fake_get_book(_: str):
-        return SimpleNamespace(status=ProcessingStatus.processing)
+        return SimpleNamespace(status=status)
 
     monkeypatch.setattr(chat_route, "get_book", fake_get_book)
 

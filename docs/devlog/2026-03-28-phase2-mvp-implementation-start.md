@@ -52,6 +52,8 @@
   - added copy-citation action per source card
   - added no-results feedback for page filters and accessibility labels/status updates
   - hardened stream handling with `try/finally` so loading state clears on stream/parse failures
+- Expanded non-ready chat error-path coverage:
+  - `400` assertions now cover `queued`, `processing`, and `failed` book statuses
 
 ## Key decisions made
 

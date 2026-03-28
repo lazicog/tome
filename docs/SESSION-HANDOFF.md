@@ -81,6 +81,7 @@ At the start of the next session, say:
   - API routed intent matrix test coverage added for `explain`/`example`/`context`
   - Routed integration tests now assert `sources` is emitted once with required source keys
   - Chat API integration tests now cover `404` missing book and `400` non-ready book paths
+  - Non-ready path tests now include `queued`, `processing`, and `failed` statuses
   - Frontend source cards now support page filters and copy-citation actions
   - Frontend chat stream handling now clears loading state via `finally` on stream/parse errors
   - Multi-agent worktree playbook and role-specialized project skills are now in repo

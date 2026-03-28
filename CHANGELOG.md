@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - API-level routed intent matrix tests (`explain`, `example`, `context`) with active router path and LLM stub
 - API-level assertions that routed streams emit `sources` exactly once with required source fields
 - API integration tests for chat error paths (`404` book missing, `400` book still processing)
+- API integration tests now cover all non-ready chat statuses (`queued`, `processing`, `failed`) for `400` responses
 
 ### Changed
 - Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready
