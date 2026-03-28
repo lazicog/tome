@@ -12,7 +12,7 @@ At the start of the next session, say:
 
 - Project: `tome` ([https://github.com/lazicog/tome](https://github.com/lazicog/tome))
 - Branch: `master`
-- Latest pushed commit at handoff start: `856fec6`
+- Latest pushed commit at handoff start: `f37aefa`
 - Workflow: solo mode direct commits to `master`
 
 ## What is completed
@@ -62,6 +62,16 @@ At the start of the next session, say:
   - SSE framing/parsing robustness improvements
   - Polling while books are processing
 
+### Phase 2 MVP (in progress)
+
+- Spec finalized:
+  - `docs/specs/2026-03-28-phase2-mvp-router-3-agents.md`
+- Implementation started:
+  - Router intent classifier: `backend/app/agents/router.py`
+  - Specialized prompts: `backend/app/agents/example_gen.py`, `backend/app/agents/context_enricher.py`
+  - LangGraph orchestration: `backend/app/agents/graph.py`
+  - Chat route wired to routed flow: `backend/app/api/routes/chat.py`
+
 ## Important decisions already made
 
 - Do not use LiteLLM
@@ -104,6 +114,6 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 
 ## Suggested next work
 
-1. Add integration test for upload -> ready -> chat stream path
-2. Start Phase 2: router + specialized agent nodes
-3. Introduce persistent progress tracking (SQLite) once Phase 2 flow is stable
+1. Complete Phase 2 checklist implementation and validation from the approved spec
+2. Add integration test for upload -> ready -> routed chat stream path
+3. Introduce persistent progress tracking (SQLite) once routing is stable

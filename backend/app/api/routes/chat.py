@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
+from app.agents.graph import stream_routed_answer
 from app.agents.tutor import stream_tutor_answer
+from app.config import settings
 from app.schemas import ChatRequest, ProcessingStatus
 from app.services.storage import get_book
 
@@ -17,5 +19,8 @@ async def chat_with_book(book_id: str, payload: ChatRequest) -> StreamingRespons
     if book.status != ProcessingStatus.ready:
         raise HTTPException(status_code=400, detail="Book is still processing")
 
-    stream = stream_tutor_answer(book_id=book_id, message=payload.message, history=payload.chat_history)
+    if settings.phase2_routing_enabled:
+        stream = stream_routed_answer(book_id=book_id, message=payload.message, history=payload.chat_history)
+    else:
+        stream = stream_tutor_answer(book_id=book_id, message=payload.message, history=payload.chat_history)
     return StreamingResponse(stream, media_type="text/event-stream")

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     max_upload_size_mb: int = 100
     top_k_chunks: int = 5
+    phase2_routing_enabled: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

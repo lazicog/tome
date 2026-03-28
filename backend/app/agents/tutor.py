@@ -47,14 +47,42 @@ def _format_sources(chunks: list[dict]) -> list[dict]:
     ]
 
 
+def build_context(chunks: list[dict]) -> str:
+    return "\n\n".join([chunk["content"] for chunk in chunks])
+
+
 async def stream_tutor_answer(book_id: str, message: str, history: list[ChatMessage]) -> AsyncIterator[str]:
     chunks = search_chunks(book_id=book_id, query=message, k=settings.top_k_chunks)
-    context = "\n\n".join([chunk["content"] for chunk in chunks])
+    context = build_context(chunks)
     sources = _format_sources(chunks)
 
     llm = get_chat_model_with_fallback()
     prompt_messages = [
         SystemMessage(content=TUTOR_PROMPT.format(context=context)),
+        *_history_to_messages(history),
+        HumanMessage(content=message),
+    ]
+
+    async for chunk in llm.astream(prompt_messages):
+        token = chunk.content
+        if token:
+            yield _sse_event("token", token)
+
+    yield _sse_event("sources", sources)
+    yield _sse_event("done", "")
+
+
+async def stream_prompted_answer(
+    *,
+    system_prompt: str,
+    context: str,
+    message: str,
+    history: list[ChatMessage],
+    sources: list[dict],
+) -> AsyncIterator[str]:
+    llm = get_chat_model_with_fallback()
+    prompt_messages = [
+        SystemMessage(content=system_prompt.format(context=context)),
         *_history_to_messages(history),
         HumanMessage(content=message),
     ]

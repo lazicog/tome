@@ -22,10 +22,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - always-on spec rule in `.cursor/rules/specs.mdc`
   - `spec-authoring` skill in `.cursor/skills/spec-authoring/`
   - `docs/specs/` directory with naming and template guidance
+- Phase 2 MVP implementation scaffold:
+  - LangGraph routing graph for `explain` / `example` / `context`
+  - specialized prompt modules for Example Generator and Context Enricher
+  - chat route integration with routed graph path
 
 ### Changed
 - Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready
 - SSE parsing in chat page now supports multi-line `data:` frames for better stream compatibility
+- Backend streaming utility now supports prompt-driven routed responses while preserving SSE event contract
 
 ### Fixed
 - Upload endpoint now enforces max upload size and rejects empty uploads with clear errors

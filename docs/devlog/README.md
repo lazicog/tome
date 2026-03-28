@@ -35,3 +35,4 @@ This directory contains a chronological journal of development work on HelpMeLea
 | [2026-03-27](2026-03-27-project-setup.md) | Project Setup and Agent Infrastructure |
 | [2026-03-27](2026-03-27-phase1-hardening.md) | Phase 1 Hardening (Local Dev + Reliability) |
 | [2026-03-28](2026-03-28-spec-workflow-setup.md) | Spec Workflow Setup |
+| [2026-03-28](2026-03-28-phase2-mvp-implementation-start.md) | Phase 2 MVP Implementation Start |
