@@ -2,7 +2,6 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -17,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 
+import PdfViewer from "../../../components/PdfViewer";
 import {
   getBook,
   getBookPdfUrl,
@@ -27,16 +27,6 @@ import {
   type Session,
 } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
-
-const PdfViewer = dynamic(() => import("../../../components/PdfViewer"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center h-full text-text-muted">
-      <Loader2 className="w-6 h-6 animate-spin mb-2" />
-      <span className="text-sm">Loading PDF viewer...</span>
-    </div>
-  ),
-});
 
 type Message = { role: "user" | "assistant"; content: string; agentType?: string };
 type SourceChunk = {
