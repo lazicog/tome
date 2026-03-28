@@ -46,9 +46,12 @@
   - added API-level matrix coverage for `explain`, `example`, and `context` queries
   - tests keep real router path enabled while stubbing retrieval/LLM dependencies for deterministic assertions
   - added contract assertions that `sources` is emitted exactly once with required fields
+  - added chat error-path integration tests for missing book (`404`) and non-ready book (`400`)
 - Expanded source UX interactions on frontend:
   - added page-filter controls for retrieved sources
   - added copy-citation action per source card
+  - added no-results feedback for page filters and accessibility labels/status updates
+  - hardened stream handling with `try/finally` so loading state clears on stream/parse failures
 
 ## Key decisions made
 

@@ -42,78 +42,90 @@ export default function ChatPage() {
     setSelectedPage(null);
     setCopyStatus("");
 
-    const res = await fetch(`${API}/books/${params.bookId}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userMsg.content, chat_history: next.slice(0, -1) }),
-    });
-    if (!res.ok) {
-      setError(await res.text());
-      setSending(false);
-      return;
-    }
+    try {
+      const res = await fetch(`${API}/books/${params.bookId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg.content, chat_history: next.slice(0, -1) }),
+      });
+      if (!res.ok) {
+        setError(await res.text());
+        return;
+      }
 
-    if (!res.body) {
-      setError("No response stream returned by server.");
-      setSending(false);
-      return;
-    }
+      if (!res.body) {
+        setError("No response stream returned by server.");
+        return;
+      }
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let assistantText = "";
-    setMessages((prev) => [...prev, { role: "assistant", content: "", agentType: "explain" }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let assistantText = "";
+      setMessages((prev) => [...prev, { role: "assistant", content: "", agentType: "explain" }]);
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-      const frames = buffer.split("\n\n");
-      buffer = frames.pop() ?? "";
+        const frames = buffer.split("\n\n");
+        buffer = frames.pop() ?? "";
 
-      for (const frame of frames) {
-        const lines = frame.split("\n");
-        const eventLine = lines.find((line) => line.startsWith("event: "));
-        const dataLines = lines.filter((line) => line.startsWith("data: "));
-        if (!eventLine || dataLines.length === 0) continue;
+        for (const frame of frames) {
+          const lines = frame.split("\n");
+          const eventLine = lines.find((line) => line.startsWith("event: "));
+          const dataLines = lines.filter((line) => line.startsWith("data: "));
+          if (!eventLine || dataLines.length === 0) continue;
 
-        const event = eventLine.replace("event: ", "");
-        const data = dataLines.map((line) => line.replace("data: ", "")).join("\n");
+          const event = eventLine.replace("event: ", "");
+          const data = dataLines.map((line) => line.replace("data: ", "")).join("\n");
 
-        if (event === "token") {
-          assistantText += JSON.parse(data) as string;
-          setMessages((prev) => {
-            const copy = [...prev];
-            copy[copy.length - 1] = { ...copy[copy.length - 1], role: "assistant", content: assistantText };
-            return copy;
-          });
-        }
-        if (event === "agent") {
-          const routed = JSON.parse(data) as string;
-          setMessages((prev) => {
-            const copy = [...prev];
-            copy[copy.length - 1] = { ...copy[copy.length - 1], role: "assistant", agentType: routed };
-            return copy;
-          });
-        }
-        if (event === "sources") {
-          try {
-            const parsed = JSON.parse(data) as SourceChunk[];
-            setSources(parsed);
-          } catch {
-            setSources([]);
+          if (event === "token") {
+            try {
+              assistantText += JSON.parse(data) as string;
+            } catch {
+              continue;
+            }
+            setMessages((prev) => {
+              const copy = [...prev];
+              copy[copy.length - 1] = { ...copy[copy.length - 1], role: "assistant", content: assistantText };
+              return copy;
+            });
+          }
+          if (event === "agent") {
+            let routed = "explain";
+            try {
+              routed = JSON.parse(data) as string;
+            } catch {
+              routed = "explain";
+            }
+            setMessages((prev) => {
+              const copy = [...prev];
+              copy[copy.length - 1] = { ...copy[copy.length - 1], role: "assistant", agentType: routed };
+              return copy;
+            });
+          }
+          if (event === "sources") {
+            try {
+              const parsed = JSON.parse(data) as SourceChunk[];
+              setSources(parsed);
+            } catch {
+              setSources([]);
+            }
           }
         }
       }
+    } catch {
+      setError("Chat request failed. Please try again.");
+    } finally {
+      setSending(false);
     }
-
-    setSending(false);
   };
 
   const availablePages = Array.from(new Set(sources.flatMap((source) => source.page_numbers))).sort((a, b) => a - b);
   const visibleSources = selectedPage === null ? sources : sources.filter((source) => source.page_numbers.includes(selectedPage));
+  const filterActive = selectedPage !== null;
 
   const copyCitation = async (source: SourceChunk) => {
     const citation = `${source.chapter} | ${source.section} | pages ${source.page_numbers.join(", ")} | score ${source.score.toFixed(4)}`;
@@ -154,26 +166,56 @@ export default function ChatPage() {
       {sources.length > 0 ? (
         <div style={{ marginTop: "1rem", border: "1px solid #334155", borderRadius: 8, padding: "0.8rem" }}>
           <strong>Sources</strong>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
             <button
               type="button"
-              onClick={() => setSelectedPage(null)}
-              style={{ borderRadius: 8, padding: "0.35rem 0.6rem", border: "1px solid #334155" }}
+              aria-pressed={!filterActive}
+              onClick={() => {
+                setSelectedPage(null);
+                setCopyStatus("");
+              }}
+              style={{
+                borderRadius: 8,
+                padding: "0.35rem 0.6rem",
+                border: filterActive ? "1px solid #334155" : "2px solid #94a3b8",
+                background: filterActive ? "transparent" : "#1e293b",
+              }}
             >
               All pages
             </button>
+            {filterActive ? (
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>Filtered by page {selectedPage}</span>
+            ) : null}
             {availablePages.map((page) => (
               <button
                 key={page}
                 type="button"
-                onClick={() => setSelectedPage(page)}
-                style={{ borderRadius: 8, padding: "0.35rem 0.6rem", border: "1px solid #334155" }}
+                aria-pressed={selectedPage === page}
+                onClick={() => {
+                  setSelectedPage(page);
+                  setCopyStatus("");
+                }}
+                style={{
+                  borderRadius: 8,
+                  padding: "0.35rem 0.6rem",
+                  border: selectedPage === page ? "2px solid #94a3b8" : "1px solid #334155",
+                  background: selectedPage === page ? "#1e293b" : "transparent",
+                }}
               >
                 Page {page}
               </button>
             ))}
           </div>
-          {copyStatus ? <p style={{ marginTop: 8, fontSize: 13 }}>{copyStatus}</p> : null}
+          {copyStatus ? (
+            <p style={{ marginTop: 8, fontSize: 13 }} role="status" aria-live="polite">
+              {copyStatus}
+            </p>
+          ) : null}
+          {filterActive && visibleSources.length === 0 ? (
+            <p style={{ marginTop: 8, fontSize: 13, color: "#94a3b8" }} role="status">
+              No sources cite page {selectedPage}. Pick another page or choose All pages.
+            </p>
+          ) : null}
           <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
             {visibleSources.map((source) => (
               <div key={source.chunk_id} style={{ background: "#111827", borderRadius: 8, padding: "0.7rem" }}>
@@ -185,6 +227,7 @@ export default function ChatPage() {
                 </div>
                 <button
                   type="button"
+                  aria-label={`Copy citation: ${source.chapter}, ${source.section}`}
                   onClick={() => void copyCitation(source)}
                   style={{ marginTop: 6, borderRadius: 8, padding: "0.3rem 0.5rem", border: "1px solid #334155" }}
                 >

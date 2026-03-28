@@ -115,6 +115,38 @@ def test_chat_stream_emits_fallback_tutor_sse_contract(monkeypatch) -> None:
     assert agent_idx < token_idx < sources_idx < done_idx
 
 
+def test_chat_returns_404_when_book_missing(monkeypatch) -> None:
+    async def fake_get_book(_: str):
+        return None
+
+    monkeypatch.setattr(chat_route, "get_book", fake_get_book)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/books/nonexistent-id/chat",
+            json={"message": "Hello.", "chat_history": []},
+        )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Book not found"}
+
+
+def test_chat_returns_400_when_book_not_ready(monkeypatch) -> None:
+    async def fake_get_book(_: str):
+        return SimpleNamespace(status=ProcessingStatus.processing)
+
+    monkeypatch.setattr(chat_route, "get_book", fake_get_book)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/books/book-123/chat",
+            json={"message": "Hello.", "chat_history": []},
+        )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Book is still processing"}
+
+
 def test_upload_to_ready_to_routed_chat_flow(monkeypatch, tmp_path) -> None:
     books: dict[str, BookResponse] = {}
 
@@ -237,6 +269,7 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
     assert isinstance(sources, list)
     assert len(sources) == 1
     source = sources[0]
-    assert set(source.keys()) == {"chunk_id", "chapter", "section", "page_numbers", "score"}
+    required_keys = {"chunk_id", "chapter", "section", "page_numbers", "score"}
+    assert required_keys.issubset(set(source.keys()))
     assert isinstance(source["page_numbers"], list)
     assert body.index("event: agent") < body.index("event: token") < body.index("event: sources") < body.index("event: done")

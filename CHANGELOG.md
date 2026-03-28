@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - specialized Cursor skills for coordinator, feature builder, reviewer, and integration manager
 - API-level routed intent matrix tests (`explain`, `example`, `context`) with active router path and LLM stub
 - API-level assertions that routed streams emit `sources` exactly once with required source fields
+- API integration tests for chat error paths (`404` book missing, `400` book still processing)
 
 ### Changed
 - Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready
@@ -46,6 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Example Generator and Context Enricher prompts are tuned for clearer role-specific behavior
 - Chat UI now renders structured source cards (chapter/section/pages/score) instead of raw source JSON
 - Chat sources now support per-page filtering and one-click citation copy in the chat UI
+- Chat stream client now guarantees `Thinking...` clears on stream/parse failures and surfaces a friendly retry error
 
 ### Fixed
 - Upload endpoint now enforces max upload size and rejects empty uploads with clear errors
