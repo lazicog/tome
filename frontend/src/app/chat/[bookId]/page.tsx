@@ -25,6 +25,8 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Array<Message & { agentType?: string }>>([]);
   const [sources, setSources] = useState<SourceChunk[]>([]);
+  const [selectedPage, setSelectedPage] = useState<number | null>(null);
+  const [copyStatus, setCopyStatus] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,6 +39,8 @@ export default function ChatPage() {
     setSending(true);
     setError("");
     setSources([]);
+    setSelectedPage(null);
+    setCopyStatus("");
 
     const res = await fetch(`${API}/books/${params.bookId}/chat`, {
       method: "POST",
@@ -108,6 +112,19 @@ export default function ChatPage() {
     setSending(false);
   };
 
+  const availablePages = Array.from(new Set(sources.flatMap((source) => source.page_numbers))).sort((a, b) => a - b);
+  const visibleSources = selectedPage === null ? sources : sources.filter((source) => source.page_numbers.includes(selectedPage));
+
+  const copyCitation = async (source: SourceChunk) => {
+    const citation = `${source.chapter} | ${source.section} | pages ${source.page_numbers.join(", ")} | score ${source.score.toFixed(4)}`;
+    try {
+      await navigator.clipboard.writeText(citation);
+      setCopyStatus("Citation copied.");
+    } catch {
+      setCopyStatus("Clipboard unavailable in this browser.");
+    }
+  };
+
   return (
     <section>
       <h2>Chat with book: {params.bookId}</h2>
@@ -137,8 +154,28 @@ export default function ChatPage() {
       {sources.length > 0 ? (
         <div style={{ marginTop: "1rem", border: "1px solid #334155", borderRadius: 8, padding: "0.8rem" }}>
           <strong>Sources</strong>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={() => setSelectedPage(null)}
+              style={{ borderRadius: 8, padding: "0.35rem 0.6rem", border: "1px solid #334155" }}
+            >
+              All pages
+            </button>
+            {availablePages.map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => setSelectedPage(page)}
+                style={{ borderRadius: 8, padding: "0.35rem 0.6rem", border: "1px solid #334155" }}
+              >
+                Page {page}
+              </button>
+            ))}
+          </div>
+          {copyStatus ? <p style={{ marginTop: 8, fontSize: 13 }}>{copyStatus}</p> : null}
           <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-            {sources.map((source) => (
+            {visibleSources.map((source) => (
               <div key={source.chunk_id} style={{ background: "#111827", borderRadius: 8, padding: "0.7rem" }}>
                 <div style={{ fontSize: 13, opacity: 0.9 }}>
                   {source.chapter} - {source.section}
@@ -146,6 +183,13 @@ export default function ChatPage() {
                 <div style={{ fontSize: 13, marginTop: 4 }}>
                   Pages: {source.page_numbers.join(", ")} | Score: {source.score.toFixed(4)}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void copyCitation(source)}
+                  style={{ marginTop: 6, borderRadius: 8, padding: "0.3rem 0.5rem", border: "1px solid #334155" }}
+                >
+                  Copy citation
+                </button>
               </div>
             ))}
           </div>

@@ -2,8 +2,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.agents import graph as graph_agent
+from app.agents import tutor as tutor_agent
 from app.agents.tutor import _sse_event
 from app.api.routes import books as books_route
 from app.api.routes import chat as chat_route
@@ -167,4 +170,51 @@ def test_upload_to_ready_to_routed_chat_flow(monkeypatch, tmp_path) -> None:
     assert chat.status_code == 200
     assert chat.headers["content-type"].startswith("text/event-stream")
     body = chat.text
+    assert body.index("event: agent") < body.index("event: token") < body.index("event: sources") < body.index("event: done")
+
+
+@pytest.mark.parametrize(
+    ("message", "expected_agent"),
+    [
+        ("Explain semantic chunking simply.", "explain"),
+        ("Show me a code example for embeddings.", "example"),
+        ("I am unfamiliar with cosine similarity, give me background first.", "context"),
+    ],
+)
+def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, expected_agent: str) -> None:
+    async def fake_get_book(_: str):
+        return SimpleNamespace(status=ProcessingStatus.ready)
+
+    def fake_search_chunks(*, book_id: str, query: str, k: int):
+        _ = (book_id, query, k)
+        return [
+            {
+                "id": "chunk-1",
+                "content": "Vector embeddings are numeric representations.",
+                "metadata": {"chapter": "Unknown", "section": "Page 1", "page_numbers": [1]},
+                "score": 0.9,
+            }
+        ]
+
+    class FakeModel:
+        async def astream(self, _messages):
+            yield SimpleNamespace(content="stub-response")
+
+    def fake_llm():
+        return FakeModel()
+
+    monkeypatch.setattr(chat_route, "get_book", fake_get_book)
+    monkeypatch.setattr(graph_agent, "search_chunks", fake_search_chunks)
+    monkeypatch.setattr(tutor_agent, "get_chat_model_with_fallback", fake_llm)
+    monkeypatch.setattr(chat_route.settings, "phase2_routing_enabled", True)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/books/book-123/chat",
+            json={"message": message, "chat_history": []},
+        )
+
+    assert response.status_code == 200
+    body = response.text
+    assert f'data: "{expected_agent}"' in body
     assert body.index("event: agent") < body.index("event: token") < body.index("event: sources") < body.index("event: done")
