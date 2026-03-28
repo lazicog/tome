@@ -6,9 +6,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface PdfViewerProps {
   url: string;
   goToPage?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
+export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProps) {
   const [pageNum, setPageNum] = useState(1);
   const [inputVal, setInputVal] = useState("1");
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -33,6 +34,7 @@ export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
     if (p >= 1) {
       setPageNum(p);
       setInputVal(String(p));
+      onPageChange?.(p);
     }
   };
 

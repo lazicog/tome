@@ -20,6 +20,30 @@ export type SessionMessage = {
   content: string;
 };
 
+export type Note = {
+  id: string;
+  book_id: string;
+  page_number: number | null;
+  chapter: string | null;
+  title: string;
+  content: string;
+  type: "manual" | "ai_summary" | "highlight" | "agent_insight";
+  source_message_id: number | null;
+  tags: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NoteCreate = {
+  content: string;
+  title?: string;
+  page_number?: number | null;
+  chapter?: string | null;
+  type?: string;
+  source_message_id?: number | null;
+  tags?: string;
+};
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 export function getApiBase() {
@@ -91,4 +115,56 @@ export async function getSessionMessages(sessionId: string): Promise<SessionMess
   }
   const data = (await res.json()) as { session_id: string; messages: SessionMessage[] };
   return data.messages;
+}
+
+// Notes API
+
+export async function listNotes(
+  bookId: string,
+  params?: { page?: number; type?: string; search?: string },
+): Promise<Note[]> {
+  const url = new URL(`${API}/books/${bookId}/notes`);
+  if (params?.page != null) url.searchParams.set("page", String(params.page));
+  if (params?.type) url.searchParams.set("type", params.type);
+  if (params?.search) url.searchParams.set("search", params.search);
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as Note[];
+}
+
+export async function createNote(bookId: string, data: NoteCreate): Promise<Note> {
+  const res = await fetch(`${API}/books/${bookId}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as Note;
+}
+
+export async function updateNote(
+  noteId: string,
+  data: { title?: string; content?: string; tags?: string },
+): Promise<Note> {
+  const res = await fetch(`${API}/notes/${noteId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as Note;
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+  const res = await fetch(`${API}/notes/${noteId}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
 }

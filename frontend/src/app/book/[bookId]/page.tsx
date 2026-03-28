@@ -16,6 +16,12 @@ import {
   X,
   Sparkles,
   GripVertical,
+  StickyNote,
+  Trash2,
+  Search,
+  Bookmark,
+  Edit3,
+  Save,
 } from "lucide-react";
 
 import PdfViewer from "../../../components/PdfViewer";
@@ -25,8 +31,13 @@ import {
   getApiBase,
   getSessionMessages,
   listSessions,
+  listNotes,
+  createNote,
+  updateNote,
+  deleteNote,
   type Book,
   type Session,
+  type Note,
 } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
 
@@ -37,12 +48,15 @@ type SourceChunk = {
   section: string;
   page_numbers: number[];
   score: number;
+  relevance?: string;
+  quote?: string;
 };
 
 function agentLabel(t: string): string {
   if (t === "example") return "Example Agent";
   if (t === "context") return "Context Enricher";
   if (t === "quiz") return "Quiz Master";
+  if (t === "summarize") return "Summarizer";
   return "Tutor";
 }
 
@@ -61,7 +75,22 @@ const SUGGESTIONS = [
   { label: "Show me a code example", icon: "example" },
   { label: "Give me background context", icon: "context" },
   { label: "Quiz me on this chapter", icon: "quiz" },
+  { label: "Summarize the key points", icon: "summarize" },
 ];
+
+const NOTE_TYPE_LABELS: Record<string, string> = {
+  manual: "Manual",
+  ai_summary: "AI Summary",
+  highlight: "Highlight",
+  agent_insight: "Saved Insight",
+};
+
+const NOTE_TYPE_COLORS: Record<string, string> = {
+  manual: "bg-blue-500/15 text-blue-400",
+  ai_summary: "bg-purple-500/15 text-purple-400",
+  highlight: "bg-yellow-500/15 text-yellow-400",
+  agent_insight: "bg-green-500/15 text-green-400",
+};
 
 export default function BookPage() {
   const params = useParams<{ bookId: string }>();
@@ -69,19 +98,33 @@ export default function BookPage() {
 
   const [book, setBook] = useState<Book | null>(null);
   const [goToPage, setGoToPage] = useState<number | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [chatOpen, setChatOpen] = useState(true);
+  const [rightPanel, setRightPanel] = useState<"chat" | "notes">("chat");
+  const [panelOpen, setPanelOpen] = useState(true);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [sources, setSources] = useState<SourceChunk[]>([]);
   const [sending, setSending] = useState(false);
   const [waitingForFirst, setWaitingForFirst] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Notes state
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [noteSearch, setNoteSearch] = useState("");
+  const [noteFilter, setNoteFilter] = useState<string>("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [showNewNote, setShowNewNote] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteContent, setNewNoteContent] = useState("");
 
   // Resizable pane
   const [pdfWidth, setPdfWidth] = useState(50);
@@ -103,9 +146,19 @@ export default function BookPage() {
     } catch { /* ignore */ }
   }, [bookId]);
 
-  useEffect(() => { void refreshSessions(); }, [refreshSessions]);
+  const refreshNotes = useCallback(async () => {
+    try {
+      const data = await listNotes(bookId, {
+        type: noteFilter || undefined,
+        search: noteSearch || undefined,
+      });
+      setNotes(data);
+    } catch { /* ignore */ }
+  }, [bookId, noteFilter, noteSearch]);
 
-  // Auto-resize textarea
+  useEffect(() => { void refreshSessions(); }, [refreshSessions]);
+  useEffect(() => { void refreshNotes(); }, [refreshNotes]);
+
   useEffect(() => {
     if (!textareaRef.current) return;
     textareaRef.current.style.height = "auto";
@@ -154,6 +207,11 @@ export default function BookPage() {
     setMessages([]);
     setSources([]);
     setError("");
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3000);
   };
 
   const sendMessage = async (text?: string) => {
@@ -228,6 +286,10 @@ export default function BookPage() {
           if (event === "sources") {
             try { setSources(JSON.parse(data) as SourceChunk[]); } catch { setSources([]); }
           }
+          if (event === "note_saved") {
+            showToast("Study notes saved automatically!");
+            void refreshNotes();
+          }
         }
       }
       void refreshSessions();
@@ -246,6 +308,61 @@ export default function BookPage() {
     }
   };
 
+  const saveAsNote = async (content: string) => {
+    try {
+      await createNote(bookId, {
+        content,
+        title: `Insight: ${content.slice(0, 60)}...`,
+        type: "agent_insight",
+        page_number: currentPage,
+      });
+      showToast("Saved as note!");
+      void refreshNotes();
+    } catch {
+      showToast("Failed to save note.");
+    }
+  };
+
+  const handleCreateNote = async () => {
+    if (!newNoteContent.trim()) return;
+    try {
+      await createNote(bookId, {
+        content: newNoteContent,
+        title: newNoteTitle || `Note on page ${currentPage}`,
+        type: "manual",
+        page_number: currentPage,
+      });
+      setNewNoteTitle("");
+      setNewNoteContent("");
+      setShowNewNote(false);
+      void refreshNotes();
+      showToast("Note created!");
+    } catch {
+      showToast("Failed to create note.");
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string) => {
+    try {
+      await updateNote(noteId, { title: editTitle, content: editContent });
+      setEditingNoteId(null);
+      void refreshNotes();
+      showToast("Note updated!");
+    } catch {
+      showToast("Failed to update note.");
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await deleteNote(noteId);
+      void refreshNotes();
+      showToast("Note deleted.");
+    } catch {
+      showToast("Failed to delete note.");
+    }
+  };
+
   const pdfUrl = getBookPdfUrl(bookId);
 
   return (
@@ -260,27 +377,54 @@ export default function BookPage() {
             {book?.title ?? "Loading..."}
           </h1>
         </div>
-        <button
-          onClick={() => setChatOpen(!chatOpen)}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-            chatOpen ? "bg-accent text-white" : "border border-border text-text-muted hover:text-text hover:bg-bg-hover"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setRightPanel("chat"); setPanelOpen(true); }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              panelOpen && rightPanel === "chat"
+                ? "bg-accent text-white"
+                : "border border-border text-text-muted hover:text-text hover:bg-bg-hover"
+            )}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Chat
+          </button>
+          <button
+            onClick={() => { setRightPanel("notes"); setPanelOpen(true); }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              panelOpen && rightPanel === "notes"
+                ? "bg-accent text-white"
+                : "border border-border text-text-muted hover:text-text hover:bg-bg-hover"
+            )}
+          >
+            <StickyNote className="w-4 h-4" />
+            Notes
+            {notes.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-accent/20 text-accent">{notes.length}</span>
+            )}
+          </button>
+          {panelOpen && (
+            <button
+              onClick={() => setPanelOpen(false)}
+              className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text hover:bg-bg-hover transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           )}
-        >
-          <MessageSquare className="w-4 h-4" />
-          {chatOpen ? "Hide Chat" : "Show Chat"}
-        </button>
+        </div>
       </div>
 
       {/* Main split pane */}
       <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden">
         {/* PDF Viewer */}
-        <div style={{ width: chatOpen ? `${pdfWidth}%` : "100%" }} className="min-h-0 shrink-0">
-          <PdfViewer url={pdfUrl} goToPage={goToPage} />
+        <div style={{ width: panelOpen ? `${pdfWidth}%` : "100%" }} className="min-h-0 shrink-0">
+          <PdfViewer url={pdfUrl} goToPage={goToPage} onPageChange={setCurrentPage} />
         </div>
 
         {/* Drag handle */}
-        {chatOpen && (
+        {panelOpen && (
           <div
             onMouseDown={onDragStart}
             className="resize-handle w-1.5 shrink-0 bg-border hover:bg-accent transition-colors flex items-center justify-center"
@@ -289,8 +433,8 @@ export default function BookPage() {
           </div>
         )}
 
-        {/* Chat panel */}
-        {chatOpen && (
+        {/* Right panel */}
+        {panelOpen && rightPanel === "chat" && (
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
             {/* Session bar */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-bg-card/50 shrink-0 overflow-x-auto">
@@ -350,15 +494,25 @@ export default function BookPage() {
                         <div className="text-[11px] font-medium text-accent mb-1">{agentLabel(m.agentType ?? "explain")}</div>
                       )}
                       {m.role === "assistant" ? (
-                        m.content ? (
-                          <div className="prose-chat text-sm max-w-none">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                          </div>
-                        ) : waitingForFirst ? (
-                          <TypingIndicator />
-                        ) : (
-                          <span className="text-text-muted">...</span>
-                        )
+                        <>
+                          {m.content ? (
+                            <div className="prose-chat text-sm max-w-none">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                            </div>
+                          ) : waitingForFirst ? (
+                            <TypingIndicator />
+                          ) : (
+                            <span className="text-text-muted">...</span>
+                          )}
+                          {m.content && !sending && (
+                            <button
+                              onClick={() => void saveAsNote(m.content)}
+                              className="mt-2 flex items-center gap-1 text-[10px] text-text-muted hover:text-accent transition-colors"
+                            >
+                              <Bookmark className="w-3 h-3" /> Save as note
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <span>{m.content}</span>
                       )}
@@ -381,12 +535,22 @@ export default function BookPage() {
                         const p = s.page_numbers[0];
                         if (p) setGoToPage(p);
                       }}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-input border border-border text-xs text-text-muted hover:text-accent hover:border-accent/40 transition-colors"
-                      title={`Score: ${s.score.toFixed(3)}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-bg-input border border-border text-xs text-text-muted hover:text-accent hover:border-accent/40 transition-colors group relative"
+                      title={s.quote || `Score: ${s.score.toFixed(3)}`}
                     >
                       <FileText className="w-3 h-3" />
                       <span className="max-w-[120px] truncate">{s.chapter !== "Unknown" ? s.chapter : s.section}</span>
                       <span className="text-text-muted/60">p.{s.page_numbers.join(",")}</span>
+                      {s.relevance && (
+                        <span className={cn(
+                          "ml-0.5 px-1 rounded text-[9px] font-medium",
+                          s.relevance === "high" ? "bg-green-500/15 text-green-400"
+                            : s.relevance === "medium" ? "bg-yellow-500/15 text-yellow-400"
+                            : "bg-red-500/15 text-red-400"
+                        )}>
+                          {s.relevance}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -426,7 +590,192 @@ export default function BookPage() {
             </div>
           </div>
         )}
+
+        {/* Notes panel */}
+        {panelOpen && rightPanel === "notes" && (
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
+            {/* Notes toolbar */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-bg-card/50 shrink-0">
+              <button
+                onClick={() => { setShowNewNote(true); setNewNoteTitle(""); setNewNoteContent(""); }}
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-border hover:bg-bg-hover transition-colors text-text-muted hover:text-text"
+              >
+                <Plus className="w-3 h-3" /> New Note
+              </button>
+              <div className="flex-1 relative">
+                <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  type="text"
+                  value={noteSearch}
+                  onChange={(e) => setNoteSearch(e.target.value)}
+                  placeholder="Search notes..."
+                  className="w-full bg-bg-input border border-border rounded-lg pl-7 pr-2 py-1 text-xs text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                />
+              </div>
+              <select
+                value={noteFilter}
+                onChange={(e) => setNoteFilter(e.target.value)}
+                className="bg-bg-input border border-border rounded-lg px-2 py-1 text-xs text-text-muted focus:outline-none focus:border-accent"
+              >
+                <option value="">All types</option>
+                <option value="manual">Manual</option>
+                <option value="ai_summary">AI Summary</option>
+                <option value="highlight">Highlight</option>
+                <option value="agent_insight">Saved Insight</option>
+              </select>
+            </div>
+
+            {/* New note form */}
+            {showNewNote && (
+              <div className="px-3 py-3 border-b border-border bg-bg-card/30 space-y-2">
+                <input
+                  type="text"
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  placeholder={`Note title (page ${currentPage})`}
+                  className="w-full bg-bg-input border border-border rounded-lg px-3 py-1.5 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
+                />
+                <textarea
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  placeholder="Write your note..."
+                  rows={4}
+                  className="w-full bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent resize-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void handleCreateNote()}
+                    disabled={!newNoteContent.trim()}
+                    className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent-hover disabled:opacity-40 transition-colors flex items-center gap-1"
+                  >
+                    <Save className="w-3 h-3" /> Save
+                  </button>
+                  <button
+                    onClick={() => setShowNewNote(false)}
+                    className="px-3 py-1.5 rounded-lg border border-border text-xs text-text-muted hover:text-text hover:bg-bg-hover transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Notes list */}
+            <div className="flex-1 overflow-auto px-3 py-3 space-y-2">
+              {notes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <StickyNote className="w-10 h-10 mb-4 text-text-muted opacity-30" />
+                  <p className="text-sm text-text-muted mb-2">No notes yet</p>
+                  <p className="text-xs text-text-muted/60">
+                    Create manual notes, save AI responses, or ask the AI to summarize
+                  </p>
+                </div>
+              ) : (
+                notes.map((note) => (
+                  <div key={note.id} className="rounded-lg border border-border bg-bg-card/50 p-3">
+                    {editingNoteId === note.id ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full bg-bg-input border border-border rounded px-2 py-1 text-sm text-text focus:outline-none focus:border-accent"
+                        />
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          rows={4}
+                          className="w-full bg-bg-input border border-border rounded px-2 py-1.5 text-sm text-text focus:outline-none focus:border-accent resize-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => void handleUpdateNote(note.id)}
+                            className="px-2 py-1 rounded bg-accent text-white text-xs hover:bg-accent-hover transition-colors"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingNoteId(null)}
+                            className="px-2 py-1 rounded border border-border text-xs text-text-muted hover:bg-bg-hover transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0", NOTE_TYPE_COLORS[note.type] || "bg-bg-hover text-text-muted")}>
+                              {NOTE_TYPE_LABELS[note.type] || note.type}
+                            </span>
+                            <span className="text-sm font-medium text-text truncate">{note.title || "Untitled"}</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingNoteId(note.id);
+                                setEditTitle(note.title);
+                                setEditContent(note.content);
+                              }}
+                              className="p-1 rounded hover:bg-bg-hover text-text-muted hover:text-text transition-colors"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => void handleDeleteNote(note.id)}
+                              className="p-1 rounded hover:bg-bg-hover text-text-muted hover:text-error transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="prose-chat text-xs max-w-none text-text-muted line-clamp-4">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2 text-[10px] text-text-muted/60">
+                          {note.page_number && (
+                            <button
+                              onClick={() => setGoToPage(note.page_number!)}
+                              className="hover:text-accent transition-colors flex items-center gap-0.5"
+                            >
+                              <FileText className="w-2.5 h-2.5" /> p.{note.page_number}
+                            </button>
+                          )}
+                          {note.chapter && <span>{note.chapter}</span>}
+                          <span>{new Date(note.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Quick highlight button */}
+            <div className="px-3 py-2.5 border-t border-border shrink-0">
+              <button
+                onClick={() => {
+                  setShowNewNote(true);
+                  setNewNoteTitle(`Highlight - Page ${currentPage}`);
+                  setNewNoteContent("");
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border text-xs text-text-muted hover:text-text hover:bg-bg-hover transition-colors"
+              >
+                <Bookmark className="w-3.5 h-3.5" />
+                Add highlight for page {currentPage}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-text shadow-lg animate-toast-in">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
