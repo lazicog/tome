@@ -11,8 +11,8 @@ interface PdfViewerProps {
 export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
   const [pageNum, setPageNum] = useState(1);
   const [inputVal, setInputVal] = useState("1");
-  const [initialLoad, setInitialLoad] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const prevSrc = useRef("");
 
   useEffect(() => {
     if (goToPage && goToPage >= 1 && goToPage !== pageNum) {
@@ -21,11 +21,13 @@ export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
     }
   }, [goToPage]);
 
+  const iframeSrc = `${url}?p=${pageNum}#page=${pageNum}&toolbar=0&navpanes=0`;
+
   useEffect(() => {
-    if (!iframeRef.current || initialLoad) return;
-    const newSrc = `${url}#page=${pageNum}&toolbar=0&navpanes=0`;
-    iframeRef.current.src = newSrc;
-  }, [pageNum, url, initialLoad]);
+    if (!iframeRef.current || iframeSrc === prevSrc.current) return;
+    prevSrc.current = iframeSrc;
+    iframeRef.current.src = iframeSrc;
+  }, [iframeSrc]);
 
   const navigate = (p: number) => {
     if (p >= 1) {
@@ -33,8 +35,6 @@ export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
       setInputVal(String(p));
     }
   };
-
-  const initialSrc = `${url}#page=${pageNum}&toolbar=0&navpanes=0`;
 
   return (
     <div className="flex flex-col min-h-0 h-full">
@@ -77,15 +77,9 @@ export default function PdfViewer({ url, goToPage }: PdfViewerProps) {
       </div>
 
       <div className="flex-1 relative">
-        {initialLoad && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted z-10 bg-bg animate-pulse">
-            <span className="text-sm">Loading PDF...</span>
-          </div>
-        )}
         <iframe
           ref={iframeRef}
-          src={initialSrc}
-          onLoad={() => setInitialLoad(false)}
+          src={`${url}?p=1#page=1&toolbar=0&navpanes=0`}
           className="w-full h-full border-0"
           title="PDF Viewer"
         />
