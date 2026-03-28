@@ -22,6 +22,10 @@ export type SessionMessage = {
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
+export function getApiBase() {
+  return API;
+}
+
 export async function listBooks(): Promise<Book[]> {
   const res = await fetch(`${API}/books`, { cache: "no-store" });
   if (!res.ok) {
@@ -43,6 +47,26 @@ export async function uploadBook(file: File): Promise<Book> {
     throw new Error(await res.text());
   }
   return (await res.json()) as Book;
+}
+
+export async function getBook(bookId: string): Promise<Book> {
+  const res = await fetch(`${API}/books/${bookId}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as Book;
+}
+
+export async function reingestBook(bookId: string): Promise<Book> {
+  const res = await fetch(`${API}/books/${bookId}/reingest`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as Book;
+}
+
+export function getBookPdfUrl(bookId: string): string {
+  return `${API}/books/${bookId}/pdf`;
 }
 
 export async function listSessions(bookId: string): Promise<Session[]> {

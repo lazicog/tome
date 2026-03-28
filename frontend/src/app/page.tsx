@@ -1,19 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BookOpen, Upload, RefreshCw, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
-import { listBooks, uploadBook, type Book } from "../lib/api";
+import { listBooks, uploadBook, reingestBook, type Book } from "../lib/api";
+import { cn } from "../lib/utils";
+
+function StatusBadge({ status }: { status: Book["status"] }) {
+  const map: Record<Book["status"], { label: string; cls: string; icon: React.ReactNode }> = {
+    queued: { label: "Queued", cls: "bg-warning/15 text-warning", icon: <Clock className="w-3 h-3" /> },
+    processing: { label: "Processing", cls: "bg-accent/15 text-accent", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+    ready: { label: "Ready", cls: "bg-success/15 text-success", icon: <CheckCircle className="w-3 h-3" /> },
+    failed: { label: "Failed", cls: "bg-error/15 text-error", icon: <AlertCircle className="w-3 h-3" /> },
+  };
+  const s = map[status];
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium", s.cls)}>
+      {s.icon} {s.label}
+    </span>
+  );
+}
 
 export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const refresh = async (silent = false) => {
-    if (!silent) {
-      setLoading(true);
-    }
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError("");
     try {
       const data = await listBooks();
@@ -21,68 +39,141 @@ export default function HomePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load books");
     } finally {
-      if (!silent) {
-        setLoading(false);
-      }
+      if (!silent) setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    void refresh();
   }, []);
 
   useEffect(() => {
-    const hasInFlight = books.some((book) => book.status === "queued" || book.status === "processing");
-    if (!hasInFlight) {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const hasInFlight = books.some((b) => b.status === "queued" || b.status === "processing");
+    if (!hasInFlight) return;
+    const timer = setInterval(() => void refresh(true), 4000);
+    return () => clearInterval(timer);
+  }, [books, refresh]);
+
+  const handleUpload = async (file: File) => {
+    if (file.type !== "application/pdf") {
+      setError("Only PDF files are supported.");
       return;
     }
-    const timer = setInterval(() => {
-      void refresh(true);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [books]);
-
-  const onUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    setUploading(true);
+    setError("");
     try {
       await uploadBook(file);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void handleUpload(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) void handleUpload(file);
+  };
+
+  const handleReingest = async (bookId: string) => {
+    try {
+      await reingestBook(bookId);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Re-ingest failed");
     }
   };
 
   return (
-    <section>
-      <h1 style={{ marginTop: 0 }}>Tome</h1>
-      <p>Upload a technical PDF and learn with AI-powered tutoring, examples, and quizzes.</p>
-
-      <label style={{ display: "inline-block", padding: "0.8rem 1rem", background: "#1e293b", borderRadius: 8, cursor: "pointer" }}>
-        Upload PDF
-        <input type="file" accept="application/pdf" onChange={onUpload} style={{ display: "none" }} />
-      </label>
-
-      {error ? <p style={{ color: "#fca5a5" }}>{error}</p> : null}
-      {loading ? <p>Loading books...</p> : null}
-
-      <div style={{ marginTop: "1.5rem", display: "grid", gap: "0.8rem" }}>
-        {books.map((book) => (
-          <article key={book.id} style={{ border: "1px solid #334155", borderRadius: 10, padding: "0.9rem" }}>
-            <h3 style={{ margin: "0 0 0.2rem" }}>{book.title}</h3>
-            <p style={{ margin: "0 0 0.4rem", opacity: 0.8 }}>
-              status: {book.status} | chunks: {book.chunks}
-            </p>
-            {book.status === "ready" ? (
-              <Link href={`/chat/${book.id}`} style={{ color: "#93c5fd" }}>
-                Open chat
-              </Link>
-            ) : (
-              <span style={{ color: "#94a3b8" }}>Chat available when ready</span>
-            )}
-          </article>
-        ))}
+    <div className="space-y-8">
+      <div className="text-center space-y-2 pt-4">
+        <h1 className="text-3xl font-bold text-text-heading">Your Library</h1>
+        <p className="text-text-muted">Upload a technical PDF and learn with AI-powered tutoring, examples, and quizzes.</p>
       </div>
-    </section>
+
+      {/* Upload zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={cn(
+          "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
+          dragOver ? "border-accent bg-accent/5" : "border-border hover:border-text-muted hover:bg-bg-card/50",
+          uploading && "pointer-events-none opacity-60"
+        )}
+      >
+        <input ref={fileInputRef} type="file" accept="application/pdf" onChange={onFileInput} className="hidden" />
+        <Upload className="w-8 h-8 mx-auto mb-3 text-text-muted" />
+        {uploading ? (
+          <p className="text-text-muted flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+          </p>
+        ) : (
+          <>
+            <p className="text-text-heading font-medium">Drop a PDF here or click to browse</p>
+            <p className="text-sm text-text-muted mt-1">Max 100MB</p>
+          </>
+        )}
+      </div>
+
+      {error && <p className="text-error text-sm text-center">{error}</p>}
+
+      {loading ? (
+        <div className="text-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-text-muted" />
+          <p className="text-text-muted mt-2 text-sm">Loading library...</p>
+        </div>
+      ) : books.length === 0 ? (
+        <p className="text-center text-text-muted py-12">No books yet. Upload your first PDF above.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {books.map((book) => (
+            <article
+              key={book.id}
+              className="group bg-bg-card border border-border rounded-xl p-5 flex flex-col justify-between hover:border-text-muted transition-colors"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <BookOpen className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <StatusBadge status={book.status} />
+                </div>
+                <h3 className="text-text-heading font-semibold leading-snug line-clamp-2 mb-1">{book.title}</h3>
+                <p className="text-xs text-text-muted">{book.chunks} chunks</p>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                {book.status === "ready" ? (
+                  <>
+                    <Link
+                      href={`/book/${book.id}`}
+                      className="flex-1 text-center px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+                    >
+                      Open
+                    </Link>
+                    <button
+                      onClick={() => void handleReingest(book.id)}
+                      title="Re-ingest with improved pipeline"
+                      className="p-2 rounded-lg border border-border hover:bg-bg-hover transition-colors text-text-muted hover:text-text"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs text-text-muted">Available when ready</span>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
