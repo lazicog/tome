@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.agents import graph as graph_agent
 from app.agents import tutor as tutor_agent
+from app.agents.router import _classify_intent_keyword
 from app.agents.tutor import _sse_event
 from app.api.routes import books as books_route
 from app.api.routes import chat as chat_route
@@ -250,10 +251,15 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
     def fake_llm():
         return FakeModel()
 
+    async def fake_classify(query, history):
+        return _classify_intent_keyword(query)
+
     monkeypatch.setattr(chat_route, "get_book", fake_get_book)
+    monkeypatch.setattr(graph_agent, "classify_intent_llm", fake_classify)
     monkeypatch.setattr(graph_agent, "search_chunks", fake_search_chunks)
     monkeypatch.setattr(tutor_agent, "get_chat_model_with_fallback", fake_llm)
     monkeypatch.setattr(chat_route.settings, "phase2_routing_enabled", True)
+    monkeypatch.setattr(chat_route.settings, "query_rewrite_enabled", False)
 
     with TestClient(app) as client:
         response = client.post(
