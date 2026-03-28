@@ -45,6 +45,7 @@
 - Strengthened routed intent reliability tests:
   - added API-level matrix coverage for `explain`, `example`, and `context` queries
   - tests keep real router path enabled while stubbing retrieval/LLM dependencies for deterministic assertions
+  - added contract assertions that `sources` is emitted exactly once with required fields
 - Expanded source UX interactions on frontend:
   - added page-filter controls for retrieved sources
   - added copy-citation action per source card

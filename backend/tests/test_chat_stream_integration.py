@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -12,6 +13,18 @@ from app.api.routes import books as books_route
 from app.api.routes import chat as chat_route
 from app.main import app
 from app.schemas import BookResponse, ProcessingStatus
+
+
+def _event_payloads(body: str, event_name: str) -> list[str]:
+    payloads: list[str] = []
+    for frame in body.split("\n\n"):
+        lines = frame.splitlines()
+        if not lines or lines[0] != f"event: {event_name}":
+            continue
+        data_lines = [line.replace("data: ", "", 1) for line in lines[1:] if line.startswith("data: ")]
+        if data_lines:
+            payloads.append("\n".join(data_lines))
+    return payloads
 
 
 def test_chat_stream_emits_routed_sse_contract(monkeypatch) -> None:
@@ -217,4 +230,13 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
     assert response.status_code == 200
     body = response.text
     assert f'data: "{expected_agent}"' in body
+    assert body.count("event: sources") == 1
+    source_payloads = _event_payloads(body, "sources")
+    assert len(source_payloads) == 1
+    sources = json.loads(source_payloads[0])
+    assert isinstance(sources, list)
+    assert len(sources) == 1
+    source = sources[0]
+    assert set(source.keys()) == {"chunk_id", "chapter", "section", "page_numbers", "score"}
+    assert isinstance(source["page_numbers"], list)
     assert body.index("event: agent") < body.index("event: token") < body.index("event: sources") < body.index("event: done")

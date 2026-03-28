@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `docs/workflows/multi-agent-worktree-playbook.md`
   - specialized Cursor skills for coordinator, feature builder, reviewer, and integration manager
 - API-level routed intent matrix tests (`explain`, `example`, `context`) with active router path and LLM stub
+- API-level assertions that routed streams emit `sources` exactly once with required source fields
 
 ### Changed
 - Frontend now auto-refreshes book status while ingestion is in progress and only enables chat links once a book is ready

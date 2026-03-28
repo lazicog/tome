@@ -79,6 +79,7 @@ At the start of the next session, say:
   - API integration test added for upload -> ready -> routed chat flow
   - Frontend chat now renders parsed source cards (chapter/section/pages/score) instead of raw JSON
   - API routed intent matrix test coverage added for `explain`/`example`/`context`
+  - Routed integration tests now assert `sources` is emitted once with required source keys
   - Frontend source cards now support page filters and copy-citation actions
   - Multi-agent worktree playbook and role-specialized project skills are now in repo
 
