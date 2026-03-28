@@ -37,7 +37,6 @@ At the start of the next session, say:
 - Agents: Tutor, Example Generator, Context Enricher, Quiz Master
 - Router: deterministic keyword matching, context > quiz > example > explain fallback
 - Config flag: `phase2_routing_enabled` (default `True`)
-- Frontend: agent labels, structured source cards, page filters, copy-citation
 
 ### SQLite Progress-Tracking + Session Persistence - COMPLETE
 
@@ -48,7 +47,29 @@ At the start of the next session, say:
 - Session resume: `session_id` in chat request loads history from DB
 - Session API: `GET /api/sessions/book/{book_id}`, `GET /api/sessions/{session_id}/messages`
 - Config flag: `use_sqlite_storage` (default `False`, ready to enable)
-- Frontend: sessions sidebar with resume/new-session controls
+
+### RAG Pipeline Overhaul - COMPLETE
+
+- Removed silent hash-based fallback embedding (errors now surface immediately)
+- Added structured logging with `structlog` across embeddings, retriever, chunker, ingest
+- Startup diagnostics: config summary + eager embedding model load in app lifespan
+- Heading-aware chunking: PDF processor extracts font metadata, chunker detects chapter/section headings by font size
+- Retrieval tuning: `top_k` increased to 8, prefetch multiplier 5x, score threshold 0.15
+- Debug endpoint: `GET /api/debug/retrieve?book_id=...&query=...&k=8`
+- Reingest endpoint: `POST /api/books/{book_id}/reingest` (deletes + re-ingests with new pipeline)
+- PDF serve endpoint: `GET /api/books/{book_id}/pdf` (serves uploaded PDF to frontend viewer)
+
+### Frontend Redesign - COMPLETE
+
+- Tailwind CSS v4 + PostCSS configured with custom dark theme tokens
+- Utility libraries: `clsx`, `tailwind-merge`, `class-variance-authority`, `lucide-react`
+- Responsive nav bar with sticky positioning and backdrop blur
+- Home/library page: drag-and-drop upload zone, book cards with status badges, re-ingest button
+- Split-pane book study page (`/book/[bookId]`):
+  - Left panel: PDF reader with `react-pdf`, page navigation, resize-aware width
+  - Right panel: Chat with session tabs, markdown rendering (`react-markdown`), source chips that link to PDF pages
+  - Toggle button to show/hide chat panel
+- Old `/chat/[bookId]` route still exists for backward compat but new route is `/book/[bookId]`
 
 ## Test suite summary
 
@@ -64,32 +85,34 @@ At the start of the next session, say:
 
 ## Key files added/changed this session
 
-### New files
+### New files (RAG overhaul + frontend redesign)
+- `backend/app/api/routes/debug.py` - Debug retrieve endpoint
+- `frontend/postcss.config.mjs` - PostCSS config for Tailwind v4
+- `frontend/src/app/globals.css` - Tailwind imports + dark theme tokens
+- `frontend/src/lib/utils.ts` - `cn()` utility (clsx + tailwind-merge)
+- `frontend/src/app/book/[bookId]/page.tsx` - Split-pane book reader + chat
+
+### Modified files (RAG overhaul + frontend redesign)
+- `backend/app/rag/embeddings.py` - Removed silent fallback, added structlog
+- `backend/app/rag/retriever.py` - Added logging, prefetch, score threshold, delete_collection
+- `backend/app/rag/processor.py` - New `extract_pdf_pages()` with font metadata, kept legacy compat
+- `backend/app/rag/chunker.py` - New `chunk_pages_rich()` heading-aware chunker, kept legacy compat
+- `backend/app/rag/ingest.py` - Uses rich pipeline, added `reingest_book()`
+- `backend/app/api/routes/books.py` - Added reingest + PDF serve endpoints
+- `backend/app/main.py` - Lifespan startup diagnostics, debug router registered
+- `backend/app/config.py` - `top_k_chunks=8`, `retrieval_prefetch_multiplier=5`, `retrieval_score_threshold=0.15`
+- `frontend/src/app/layout.tsx` - Tailwind-based layout with nav bar
+- `frontend/src/app/page.tsx` - Redesigned library with cards, badges, upload zone
+- `frontend/src/lib/api.ts` - Added `getBook`, `reingestBook`, `getBookPdfUrl`, `getApiBase`
+- `.gitignore` - Added `*.pdf` for test PDFs
+
+### Previous session files (still present)
 - `backend/app/agents/quiz_master.py` - Quiz Master prompt
 - `backend/app/api/routes/sessions.py` - Session list/messages endpoints
 - `backend/app/services/storage_provider.py` - JSON/SQLite storage switch
 - `backend/app/services/migrate.py` - JSON-to-SQLite migration
 - `backend/tests/test_session_chat_integration.py` - Session-aware chat tests
-- `docs/specs/2026-03-28-sqlite-progress-tracking.md`
-- `docs/specs/2026-03-28-quiz-master-agent.md`
-- `docs/devlog/2026-03-28-phase2-mvp-complete.md`
-- `docs/devlog/2026-03-28-sqlite-progress-tracking-foundation.md`
-- `docs/devlog/2026-03-28-session-persistence-and-quiz-master.md`
-
-### Modified files
-- `backend/app/agents/router.py` - Added quiz intent
-- `backend/app/agents/graph.py` - Added quiz_prep node
-- `backend/app/api/routes/chat.py` - Session-aware streaming
-- `backend/app/api/routes/books.py` - Uses storage_provider
-- `backend/app/main.py` - Sessions router registered
-- `backend/app/config.py` - `use_sqlite_storage` flag
-- `backend/app/schemas.py` - SessionResponse, session_id in ChatRequest
-- `backend/requirements.txt` - aiosqlite, pytest-asyncio, pytest pinned
-- `backend/tests/test_router.py` - Quiz intent tests
-- `backend/tests/test_chat_stream_integration.py` - Quiz SSE test
-- `frontend/src/lib/api.ts` - Session API helpers
-- `frontend/src/app/chat/[bookId]/page.tsx` - Session sidebar + Quiz Master label
-- `frontend/src/app/page.tsx` - Updated branding
+- Specs, devlogs, ADRs as previously documented
 
 ## Important decisions already made
 
@@ -98,6 +121,10 @@ At the start of the next session, say:
 - `aiosqlite` for async SQLite; `pytest<9` required by `pytest-asyncio` 0.26.0
 - Storage provider pattern for transparent backend swap
 - Quiz classification uses keyword matching consistent with existing router
+- Silent embedding fallback removed (errors surface immediately for debugging)
+- Heading detection uses font size ratios: chapter >= 1.4x body, section >= 1.1x body
+- Frontend uses Tailwind CSS v4 + custom theme tokens (not shadcn/ui component library install, just its utility pattern)
+- `react-pdf` for client-side PDF rendering; PDF served from backend `/api/books/{book_id}/pdf`
 
 See ADRs:
 - `docs/adr/0001-langchain-over-litellm.md`
@@ -130,11 +157,15 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 - Port conflict on backend startup (`WinError 10048`): `netstat -ano | findstr :8000` then `taskkill /PID <PID> /F`
 - Browser origin mismatch (`localhost` vs `127.0.0.1`) can trigger CORS issues
 - `pytest-asyncio` 0.26.0 needs `pytest<9`; pinned at 8.4.2
+- PowerShell on this machine uses old version that doesn't support `&&`; use `;` or separate commands
+- `npx`/`npm` not on default PATH in Cursor shell; use `$env:PATH = "C:\Program Files\nodejs;" + $env:PATH` first
+- After RAG pipeline changes, existing books need re-ingestion: use the `/api/books/{book_id}/reingest` endpoint or the re-ingest button in the UI
 
 ## Suggested next work
 
-1. Enable `use_sqlite_storage=True` by default and run JSON-to-SQLite migration
-2. Add quiz answer evaluation flow (user answers -> Quiz Master grades and explains)
-3. Plan Study Planner agent for structured learning paths
-4. Add learning progress / mastery tracking tables to SQLite schema
-5. Consider spaced repetition scheduling based on quiz scores
+1. **Re-ingest test book** with the new heading-aware pipeline (click re-ingest button or call API)
+2. Enable `use_sqlite_storage=True` by default and run JSON-to-SQLite migration
+3. Add quiz answer evaluation flow (user answers -> Quiz Master grades and explains)
+4. Plan Study Planner agent for structured learning paths
+5. Add learning progress / mastery tracking tables to SQLite schema
+6. Consider spaced repetition scheduling based on quiz scores

@@ -41,3 +41,6 @@ htmlcov/
 
 # Build
 *.log
+
+# Test PDFs (large binary files)
+*.pdf
