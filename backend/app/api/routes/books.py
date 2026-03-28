@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from app.config import settings
 from app.rag.ingest import ingest_book
 from app.schemas import BookListResponse, BookResponse, ProcessingStatus
-from app.services.storage import create_book, get_book, list_books, update_book_status
+from app.services.storage_provider import create_book, get_book, list_books, update_book_status
 
 router = APIRouter(prefix="/books", tags=["books"])
 

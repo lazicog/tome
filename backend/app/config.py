@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 100
     top_k_chunks: int = 5
     phase2_routing_enabled: bool = True
+    use_sqlite_storage: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -35,6 +35,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     chat_history: list[ChatMessage] = Field(default_factory=list)
+    session_id: str | None = None
 
 
 class SourceChunk(BaseModel):
@@ -43,6 +44,19 @@ class SourceChunk(BaseModel):
     section: str
     page_numbers: list[int]
     score: float
+
+
+class SessionResponse(BaseModel):
+    id: str
+    book_id: str
+    created_at: str
+    updated_at: str
+    message_count: int = 0
+
+
+class SessionMessagesResponse(BaseModel):
+    session_id: str
+    messages: list[ChatMessage]
 
 
 class ErrorResponse(BaseModel):
