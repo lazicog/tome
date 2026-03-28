@@ -4,6 +4,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agents.context_enricher import CONTEXT_PROMPT
 from app.agents.example_gen import EXAMPLE_PROMPT
+from app.agents.quiz_master import QUIZ_PROMPT
 from app.agents.router import classify_intent
 from app.config import settings
 from app.agents.tutor import TUTOR_PROMPT, _format_sources, build_context, stream_prompted_answer
@@ -37,12 +38,14 @@ async def router_node(state: AgentState) -> dict:
     return {"agent_type": agent_type}
 
 
-def route_intent(state: AgentState) -> Literal["tutor_prep", "example_prep", "context_prep"]:
+def route_intent(state: AgentState) -> Literal["tutor_prep", "example_prep", "context_prep", "quiz_prep"]:
     intent = state.get("agent_type", "explain")
     if intent == "example":
         return "example_prep"
     if intent == "context":
         return "context_prep"
+    if intent == "quiz":
+        return "quiz_prep"
     return "tutor_prep"
 
 
@@ -58,6 +61,10 @@ async def context_prep_node(_: AgentState) -> dict:
     return {"system_prompt": CONTEXT_PROMPT}
 
 
+async def quiz_prep_node(_: AgentState) -> dict:
+    return {"system_prompt": QUIZ_PROMPT}
+
+
 def build_phase2_graph():
     graph = StateGraph(AgentState)
     graph.add_node("retrieve", retrieve_node)
@@ -65,6 +72,7 @@ def build_phase2_graph():
     graph.add_node("tutor_prep", tutor_prep_node)
     graph.add_node("example_prep", example_prep_node)
     graph.add_node("context_prep", context_prep_node)
+    graph.add_node("quiz_prep", quiz_prep_node)
 
     graph.add_edge(START, "retrieve")
     graph.add_edge("retrieve", "router")
@@ -75,11 +83,13 @@ def build_phase2_graph():
             "tutor_prep": "tutor_prep",
             "example_prep": "example_prep",
             "context_prep": "context_prep",
+            "quiz_prep": "quiz_prep",
         },
     )
     graph.add_edge("tutor_prep", END)
     graph.add_edge("example_prep", END)
     graph.add_edge("context_prep", END)
+    graph.add_edge("quiz_prep", END)
     return graph.compile()
 
 

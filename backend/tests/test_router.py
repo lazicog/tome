@@ -34,6 +34,10 @@ def test_classify_intent_ignores_history_for_routing() -> None:
         ("I need background before I learn this topic.", "context"),
         ("What are the prerequisites for this concept?", "context"),
         ("Explain semantic chunking tradeoffs.", "explain"),
+        ("Quiz me on this chapter.", "quiz"),
+        ("Test my understanding of embeddings.", "quiz"),
+        ("Give me some practice questions.", "quiz"),
+        ("Can you assess what I know about RAG?", "quiz"),
     ],
 )
 def test_classify_intent_phrase_matrix(query: str, expected: str) -> None:
@@ -41,7 +45,13 @@ def test_classify_intent_phrase_matrix(query: str, expected: str) -> None:
     assert intent == expected
 
 
+def test_classify_intent_quiz() -> None:
+    intent = classify_intent("Quiz me on retrieval augmented generation.", [])
+    assert intent == "quiz"
+
+
 def test_route_intent_fallbacks() -> None:
     assert route_intent({"agent_type": "example"}) == "example_prep"
     assert route_intent({"agent_type": "context"}) == "context_prep"
+    assert route_intent({"agent_type": "quiz"}) == "quiz_prep"
     assert route_intent({"agent_type": "unknown"}) == "tutor_prep"

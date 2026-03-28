@@ -225,6 +225,7 @@ def test_upload_to_ready_to_routed_chat_flow(monkeypatch, tmp_path) -> None:
         ("Explain semantic chunking simply.", "explain"),
         ("Show me a code example for embeddings.", "example"),
         ("I am unfamiliar with cosine similarity, give me background first.", "context"),
+        ("Quiz me on retrieval augmented generation.", "quiz"),
     ],
 )
 def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, expected_agent: str) -> None:
