@@ -8,6 +8,8 @@ At the start of the next session, say:
 
 `Read docs/SESSION-HANDOFF.md and continue from there.`
 
+For a narrative of the **Notes + RAG v2 + agent upgrade** (router, reranker, notes API, UI), see [`docs/devlog/2026-03-29-notes-rag-agent-upgrade.md`](devlog/2026-03-29-notes-rag-agent-upgrade.md). User-facing bullets are in [`CHANGELOG.md`](../CHANGELOG.md) under `[Unreleased]`.
+
 ## Current project status
 
 - Project: `tome` ([https://github.com/lazicog/tome](https://github.com/lazicog/tome))

@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Notes, RAG v2, and agent upgrade** (see `docs/devlog/2026-03-29-notes-rag-agent-upgrade.md`):
+  - LLM intent router with keyword fallback; new `summarize` intent and Summarizer agent
+  - LangGraph flow: `router → query_rewrite → retrieve → agent prep` (config: `query_rewrite_enabled`, `reranker_enabled`, `reranker_model`)
+  - Cross-encoder reranking (`cross-encoder/ms-marco-MiniLM-L-6-v2`) after hybrid vector + BM25 fusion
+  - Contextual chunk headers (`[Chapter | Section]`) prepended at ingest; **re-ingest** required for existing books
+  - Sources API: `quote`, `relevance` (high/medium/low), deduplicated chunks
+  - SQLite `notes` table: types `manual`, `ai_summary`, `highlight`, `agent_insight`
+  - Notes REST API + `POST /api/books/{book_id}/notes/generate` (SSE); `note_saved` SSE when summarizer saves via session chat
+  - Frontend: Chat | Notes tabs, note CRUD, search/filter, save-as-note, PDF page sync via `PdfViewer`
 - SQLite progress-tracking foundation:
   - Database schema for books, chat sessions, and chat messages
   - Async service layer for book CRUD (`storage_db.py`) and session/message CRUD (`sessions.py`)
