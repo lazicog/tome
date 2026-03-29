@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
     message: str
     chat_history: list[ChatMessage] = Field(default_factory=list)
     session_id: str | None = None
+    current_page: int | None = None
 
 
 class SourceChunk(BaseModel):
@@ -46,6 +47,7 @@ class SourceChunk(BaseModel):
     score: float
     relevance: str = "medium"
     quote: str = ""
+    is_ahead_of_position: bool = False
 
 
 class SessionResponse(BaseModel):

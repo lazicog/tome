@@ -123,3 +123,50 @@ def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
     )
 
     return results
+
+
+POSITION_FILTER_MIN_CHUNKS = 3
+
+
+def _chunk_is_within_range(chunk: dict, max_page: int) -> bool:
+    """Return True only if ALL page_numbers in the chunk are <= max_page."""
+    pages = chunk["metadata"].get("page_numbers", [])
+    if not pages:
+        return True
+    return all(p <= max_page for p in pages)
+
+
+def search_chunks_positioned(
+    book_id: str,
+    query: str,
+    k: int = 5,
+    current_page: int | None = None,
+) -> tuple[list[dict], bool]:
+    """Wraps search_chunks with optional reading-position filtering.
+
+    Returns (chunks, used_fallback) where used_fallback is True when the
+    position filter produced fewer than POSITION_FILTER_MIN_CHUNKS results
+    and the full-book pool was supplemented.
+
+    When current_page is None the function is identical to search_chunks.
+    """
+    pool_k = k * 2 if current_page is not None else k
+    all_chunks = search_chunks(book_id=book_id, query=query, k=pool_k)
+
+    if current_page is None:
+        return all_chunks[:k], False
+
+    in_range = [c for c in all_chunks if _chunk_is_within_range(c, current_page)]
+
+    if len(in_range) >= POSITION_FILTER_MIN_CHUNKS:
+        return in_range[:k], False
+
+    out_of_range = [c for c in all_chunks if not _chunk_is_within_range(c, current_page)]
+    log.info(
+        "retriever.position_filter_fallback",
+        book_id=book_id,
+        current_page=current_page,
+        in_range=len(in_range),
+        supplemented=len(out_of_range[:k - len(in_range)]),
+    )
+    return (in_range + out_of_range)[:k], True

@@ -46,7 +46,7 @@ def test_session_aware_chat_creates_session_and_persists(monkeypatch, tmp_path) 
         from app.services.storage_db import get_book as db_get
         return await db_get(book_id)
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None):
         _ = (book_id, message, history)
         yield _sse_event("agent", "explain")
         yield _sse_event("token", "Test response.")
@@ -105,7 +105,7 @@ def test_session_resume_loads_history_from_db(monkeypatch, tmp_path) -> None:
         from app.services.storage_db import get_book as db_get
         return await db_get(book_id)
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None):
         captured_history.extend(history)
         yield _sse_event("agent", "explain")
         yield _sse_event("token", "Follow-up answer.")

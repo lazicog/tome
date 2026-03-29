@@ -1,4 +1,5 @@
 import json
+import structlog
 from typing import AsyncIterator
 
 from fastapi import APIRouter, HTTPException
@@ -11,6 +12,55 @@ from app.schemas import ChatMessage, ChatRequest, ProcessingStatus
 from app.services.storage_provider import get_book
 
 router = APIRouter(prefix="/books", tags=["chat"])
+log = structlog.get_logger()
+
+
+def _parse_frame_data(frame: str, event: str) -> str | None:
+    """Extract the data payload from an SSE frame for a given event name."""
+    if not frame.startswith(f"event: {event}\n"):
+        return None
+    if "data: " not in frame:
+        return None
+    return frame.split("data: ", 1)[1].split("\n")[0]
+
+
+async def _note_aware_stream(
+    book_id: str,
+    message: str,
+    inner: AsyncIterator[str],
+) -> AsyncIterator[str]:
+    """Wraps any agent stream to auto-save summarize output as a note.
+
+    Applied to all chat code paths so note auto-save works regardless of
+    whether use_sqlite_storage is enabled.
+    """
+    collected_text = ""
+    agent_type: str | None = None
+
+    async for frame in inner:
+        data = _parse_frame_data(frame, "token")
+        if data is not None:
+            try:
+                collected_text += json.loads(data)
+            except (json.JSONDecodeError, IndexError):
+                pass
+        else:
+            data = _parse_frame_data(frame, "agent")
+            if data is not None:
+                try:
+                    agent_type = json.loads(data)
+                except (json.JSONDecodeError, IndexError):
+                    pass
+        yield frame
+
+    if agent_type == "summarize" and collected_text:
+        from app.services.notes import create_note
+        try:
+            title = f"Notes: {message[:80]}"
+            await create_note(book_id=book_id, content=collected_text, title=title, note_type="ai_summary")
+            yield _sse_event("note_saved", {"title": title})
+        except Exception as exc:
+            log.warning("note_autosave.failed", book_id=book_id, error=str(exc))
 
 
 async def _session_aware_stream(
@@ -18,54 +68,41 @@ async def _session_aware_stream(
     message: str,
     history: list[ChatMessage],
     session_id: str,
+    current_page: int | None = None,
 ) -> AsyncIterator[str]:
-    """Wraps the agent stream to persist messages, run tools, and emit session metadata."""
+    """Wraps the agent stream to persist messages and emit session metadata."""
     from app.services.sessions import add_message
 
     await add_message(session_id, "user", message)
 
     yield _sse_event("session", session_id)
 
-    inner: AsyncIterator[str]
     if settings.phase2_routing_enabled:
-        inner = stream_routed_answer(book_id=book_id, message=message, history=history)
+        inner: AsyncIterator[str] = stream_routed_answer(book_id=book_id, message=message, history=history, current_page=current_page)
     else:
-        inner = stream_tutor_answer(book_id=book_id, message=message, history=history)
+        inner = stream_tutor_answer(book_id=book_id, message=message, history=history, current_page=current_page)
 
     collected_text = ""
     agent_type: str | None = None
 
     async for frame in inner:
-        if frame.startswith("event: token\n"):
-            data_part = frame.split("data: ", 1)[1].split("\n")[0] if "data: " in frame else ""
+        data = _parse_frame_data(frame, "token")
+        if data is not None:
             try:
-                collected_text += json.loads(data_part)
+                collected_text += json.loads(data)
             except (json.JSONDecodeError, IndexError):
                 pass
-        elif frame.startswith("event: agent\n"):
-            data_part = frame.split("data: ", 1)[1].split("\n")[0] if "data: " in frame else ""
-            try:
-                agent_type = json.loads(data_part)
-            except (json.JSONDecodeError, IndexError):
-                pass
+        else:
+            data = _parse_frame_data(frame, "agent")
+            if data is not None:
+                try:
+                    agent_type = json.loads(data)
+                except (json.JSONDecodeError, IndexError):
+                    pass
         yield frame
 
     if collected_text:
         await add_message(session_id, "assistant", collected_text, agent_type=agent_type)
-
-    if agent_type == "summarize" and collected_text:
-        from app.services.notes import create_note
-        try:
-            title = f"Notes: {message[:80]}"
-            await create_note(
-                book_id=book_id,
-                content=collected_text,
-                title=title,
-                note_type="ai_summary",
-            )
-            yield _sse_event("note_saved", {"title": title})
-        except Exception:
-            pass
 
 
 @router.post("/{book_id}/chat", summary="Chat with a processed book")
@@ -85,6 +122,8 @@ async def chat_with_book(book_id: str, payload: ChatRequest) -> StreamingRespons
     else:
         history = payload.chat_history
 
+    current_page = payload.current_page
+
     if settings.use_sqlite_storage:
         from app.services.sessions import create_session
 
@@ -92,15 +131,17 @@ async def chat_with_book(book_id: str, payload: ChatRequest) -> StreamingRespons
         if not session_id:
             session_id = await create_session(book_id)
 
-        stream = _session_aware_stream(
+        base_stream: AsyncIterator[str] = _session_aware_stream(
             book_id=book_id,
             message=payload.message,
             history=history,
             session_id=session_id,
+            current_page=current_page,
         )
     elif settings.phase2_routing_enabled:
-        stream = stream_routed_answer(book_id=book_id, message=payload.message, history=history)
+        base_stream = stream_routed_answer(book_id=book_id, message=payload.message, history=history, current_page=current_page)
     else:
-        stream = stream_tutor_answer(book_id=book_id, message=payload.message, history=history)
+        base_stream = stream_tutor_answer(book_id=book_id, message=payload.message, history=history, current_page=current_page)
 
+    stream = _note_aware_stream(book_id=book_id, message=payload.message, inner=base_stream)
     return StreamingResponse(stream, media_type="text/event-stream")

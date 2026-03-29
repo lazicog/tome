@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS books (
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id TEXT PRIMARY KEY,
-    book_id TEXT NOT NULL REFERENCES books(id),
+    book_id TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 CREATE TABLE IF NOT EXISTS notes (
     id TEXT PRIMARY KEY,
-    book_id TEXT NOT NULL REFERENCES books(id),
+    book_id TEXT NOT NULL,
     page_number INTEGER,
     chapter TEXT,
     title TEXT NOT NULL DEFAULT '',

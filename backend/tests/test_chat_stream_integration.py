@@ -32,8 +32,8 @@ def test_chat_stream_emits_routed_sse_contract(monkeypatch) -> None:
     async def fake_get_book(_: str):
         return SimpleNamespace(status=ProcessingStatus.ready)
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list):
-        _ = (book_id, message, history)
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None):
+        _ = (book_id, message, history, current_page)
         yield _sse_event("agent", "context")
         yield _sse_event("token", "Background first.")
         yield _sse_event(
@@ -76,8 +76,8 @@ def test_chat_stream_emits_fallback_tutor_sse_contract(monkeypatch) -> None:
     async def fake_get_book(_: str):
         return SimpleNamespace(status=ProcessingStatus.ready)
 
-    async def fake_stream_tutor_answer(*, book_id: str, message: str, history: list):
-        _ = (book_id, message, history)
+    async def fake_stream_tutor_answer(*, book_id: str, message: str, history: list, current_page=None):
+        _ = (book_id, message, history, current_page)
         yield _sse_event("agent", "explain")
         yield _sse_event("token", "Tutor response.")
         yield _sse_event(
@@ -172,8 +172,8 @@ def test_upload_to_ready_to_routed_chat_flow(monkeypatch, tmp_path) -> None:
         existing = books[book_id]
         books[book_id] = existing.model_copy(update={"status": ProcessingStatus.ready, "chunks": 3})
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list):
-        _ = (book_id, message, history)
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None):
+        _ = (book_id, message, history, current_page)
         yield _sse_event("agent", "context")
         yield _sse_event("token", "Routed response.")
         yield _sse_event(
@@ -233,9 +233,9 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
     async def fake_get_book(_: str):
         return SimpleNamespace(status=ProcessingStatus.ready)
 
-    def fake_search_chunks(*, book_id: str, query: str, k: int):
-        _ = (book_id, query, k)
-        return [
+    def fake_search_chunks_positioned(*, book_id: str, query: str, k: int, current_page=None):
+        _ = (book_id, query, k, current_page)
+        chunks = [
             {
                 "id": "chunk-1",
                 "content": "Vector embeddings are numeric representations.",
@@ -243,6 +243,7 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
                 "score": 0.9,
             }
         ]
+        return chunks, False
 
     class FakeModel:
         async def astream(self, _messages):
@@ -256,7 +257,7 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
 
     monkeypatch.setattr(chat_route, "get_book", fake_get_book)
     monkeypatch.setattr(graph_agent, "classify_intent_llm", fake_classify)
-    monkeypatch.setattr(graph_agent, "search_chunks", fake_search_chunks)
+    monkeypatch.setattr(graph_agent, "search_chunks_positioned", fake_search_chunks_positioned)
     monkeypatch.setattr(tutor_agent, "get_chat_model_with_fallback", fake_llm)
     monkeypatch.setattr(chat_route.settings, "phase2_routing_enabled", True)
     monkeypatch.setattr(chat_route.settings, "query_rewrite_enabled", False)
@@ -281,3 +282,59 @@ def test_chat_stream_routes_expected_agent_intent(monkeypatch, message: str, exp
     assert required_keys.issubset(set(source.keys()))
     assert isinstance(source["page_numbers"], list)
     assert body.index("event: agent") < body.index("event: token") < body.index("event: sources") < body.index("event: done")
+
+
+def test_chat_sends_current_page_when_provided(monkeypatch) -> None:
+    """current_page in POST body is forwarded to stream_routed_answer."""
+    async def fake_get_book(_: str):
+        return SimpleNamespace(status=ProcessingStatus.ready)
+
+    captured: dict = {}
+
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None):
+        captured["current_page"] = current_page
+        yield _sse_event("agent", "explain")
+        yield _sse_event("token", "ok")
+        yield _sse_event("sources", [])
+        yield _sse_event("done", "")
+
+    monkeypatch.setattr(chat_route, "get_book", fake_get_book)
+    monkeypatch.setattr(chat_route, "stream_routed_answer", fake_stream_routed_answer)
+    monkeypatch.setattr(chat_route.settings, "phase2_routing_enabled", True)
+    monkeypatch.setattr(chat_route.settings, "use_sqlite_storage", False)
+
+    with TestClient(app) as client:
+        client.post(
+            "/api/books/book-123/chat",
+            json={"message": "What is this?", "chat_history": [], "current_page": 5},
+        )
+
+    assert captured.get("current_page") == 5
+
+
+def test_chat_omits_current_page_defaults_to_none(monkeypatch) -> None:
+    """When current_page is omitted from POST body, stream_routed_answer receives None."""
+    async def fake_get_book(_: str):
+        return SimpleNamespace(status=ProcessingStatus.ready)
+
+    captured: dict = {}
+
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None):
+        captured["current_page"] = current_page
+        yield _sse_event("agent", "explain")
+        yield _sse_event("token", "ok")
+        yield _sse_event("sources", [])
+        yield _sse_event("done", "")
+
+    monkeypatch.setattr(chat_route, "get_book", fake_get_book)
+    monkeypatch.setattr(chat_route, "stream_routed_answer", fake_stream_routed_answer)
+    monkeypatch.setattr(chat_route.settings, "phase2_routing_enabled", True)
+    monkeypatch.setattr(chat_route.settings, "use_sqlite_storage", False)
+
+    with TestClient(app) as client:
+        client.post(
+            "/api/books/book-123/chat",
+            json={"message": "What is this?", "chat_history": []},
+        )
+
+    assert captured.get("current_page") is None

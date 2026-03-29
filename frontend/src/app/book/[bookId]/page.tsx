@@ -50,6 +50,7 @@ type SourceChunk = {
   score: number;
   relevance?: string;
   quote?: string;
+  is_ahead_of_position?: boolean;
 };
 
 function agentLabel(t: string): string {
@@ -125,6 +126,8 @@ export default function BookPage() {
   const [showNewNote, setShowNewNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
+
+  const [searchWholeBook, setSearchWholeBook] = useState(false);
 
   // Resizable pane
   const [pdfWidth, setPdfWidth] = useState(50);
@@ -232,6 +235,7 @@ export default function BookPage() {
         chat_history: activeSessionId ? [] : next.slice(0, -1),
       };
       if (activeSessionId) body.session_id = activeSessionId;
+      if (!searchWholeBook) body.current_page = currentPage;
 
       const res = await fetch(`${getApiBase()}/books/${bookId}/chat`, {
         method: "POST",
@@ -551,6 +555,11 @@ export default function BookPage() {
                           {s.relevance}
                         </span>
                       )}
+                      {s.is_ahead_of_position && (
+                        <span className="ml-0.5 px-1 rounded text-[9px] font-medium bg-orange-500/15 text-orange-400">
+                          ahead
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -568,6 +577,22 @@ export default function BookPage() {
 
             {/* Input */}
             <div className="px-3 py-2.5 border-t border-border shrink-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-text-muted/70">
+                  {searchWholeBook ? "Searching whole book" : `Searching up to page ${currentPage}`}
+                </span>
+                <button
+                  onClick={() => setSearchWholeBook((v) => !v)}
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded border transition-colors",
+                    searchWholeBook
+                      ? "border-accent/40 text-accent bg-accent/10 hover:bg-accent/20"
+                      : "border-border text-text-muted hover:text-text hover:bg-bg-hover"
+                  )}
+                >
+                  {searchWholeBook ? "Restrict to my page" : "Search whole book"}
+                </button>
+              </div>
               <div className="flex gap-2 items-end">
                 <textarea
                   ref={textareaRef}

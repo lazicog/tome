@@ -4,7 +4,7 @@ from typing import AsyncIterator
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from app.config import settings
-from app.rag.retriever import search_chunks
+from app.rag.retriever import search_chunks_positioned
 from app.schemas import ChatMessage
 from app.services.llm import get_chat_model_with_fallback
 
@@ -56,7 +56,7 @@ def _relevance_label(score: float) -> str:
     return "low"
 
 
-def _format_sources(chunks: list[dict]) -> list[dict]:
+def _format_sources(chunks: list[dict], current_page: int | None = None) -> list[dict]:
     seen_pages: set[tuple[str, str]] = set()
     sources: list[dict] = []
     for c in chunks:
@@ -67,14 +67,21 @@ def _format_sources(chunks: list[dict]) -> list[dict]:
         seen_pages.add(pages_key)
 
         score = c.get("rerank_score", c.get("score", 0.0))
+        page_numbers: list[int] = c["metadata"].get("page_numbers", [])
+        is_ahead = (
+            current_page is not None
+            and bool(page_numbers)
+            and any(p > current_page for p in page_numbers)
+        )
         sources.append({
             "chunk_id": c["id"],
             "chapter": chapter,
             "section": c["metadata"].get("section", "Unknown"),
-            "page_numbers": c["metadata"].get("page_numbers", []),
+            "page_numbers": page_numbers,
             "score": round(float(score), 4),
             "relevance": _relevance_label(float(score)),
             "quote": _extract_quote(c.get("content", "")),
+            "is_ahead_of_position": is_ahead,
         })
     return sources
 
@@ -83,10 +90,15 @@ def build_context(chunks: list[dict]) -> str:
     return "\n\n".join([chunk["content"] for chunk in chunks])
 
 
-async def stream_tutor_answer(book_id: str, message: str, history: list[ChatMessage]) -> AsyncIterator[str]:
-    chunks = search_chunks(book_id=book_id, query=message, k=settings.top_k_chunks)
+async def stream_tutor_answer(
+    book_id: str,
+    message: str,
+    history: list[ChatMessage],
+    current_page: int | None = None,
+) -> AsyncIterator[str]:
+    chunks, _ = search_chunks_positioned(book_id=book_id, query=message, k=settings.top_k_chunks, current_page=current_page)
     context = build_context(chunks)
-    sources = _format_sources(chunks)
+    sources = _format_sources(chunks, current_page=current_page)
 
     llm = get_chat_model_with_fallback()
     prompt_messages = [

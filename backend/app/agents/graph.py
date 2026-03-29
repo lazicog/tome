@@ -9,7 +9,7 @@ from app.agents.router import classify_intent_llm
 from app.agents.summarizer import SUMMARIZER_PROMPT
 from app.config import settings
 from app.agents.tutor import TUTOR_PROMPT, _format_sources, build_context, stream_prompted_answer
-from app.rag.retriever import search_chunks
+from app.rag.retriever import search_chunks_positioned
 from app.schemas import ChatMessage
 
 
@@ -24,6 +24,8 @@ class AgentState(TypedDict, total=False):
     source_chunks: list[dict]
     context: str
     system_prompt: str
+    current_page: int | None
+    used_position_fallback: bool
 
 
 async def router_node(state: AgentState) -> dict:
@@ -72,10 +74,16 @@ async def query_rewrite_node(state: AgentState) -> dict:
 
 async def retrieve_node(state: AgentState) -> dict:
     queries = state.get("search_queries", [state["query"]])
+    current_page: int | None = state.get("current_page")
     all_chunks: dict[str, dict] = {}
+    any_fallback = False
 
     for q in queries:
-        chunks = search_chunks(book_id=state["book_id"], query=q, k=settings.top_k_chunks)
+        chunks, used_fallback = search_chunks_positioned(
+            book_id=state["book_id"], query=q, k=settings.top_k_chunks, current_page=current_page
+        )
+        if used_fallback:
+            any_fallback = True
         for c in chunks:
             if c["id"] not in all_chunks or c["score"] > all_chunks[c["id"]]["score"]:
                 all_chunks[c["id"]] = c
@@ -85,8 +93,9 @@ async def retrieve_node(state: AgentState) -> dict:
 
     return {
         "retrieved_chunks": top_chunks,
-        "source_chunks": _format_sources(top_chunks),
+        "source_chunks": _format_sources(top_chunks, current_page=current_page),
         "context": build_context(top_chunks),
+        "used_position_fallback": any_fallback,
     }
 
 
@@ -158,13 +167,19 @@ def build_phase2_graph():
     return graph.compile()
 
 
-async def stream_routed_answer(book_id: str, message: str, history: list[ChatMessage]):
+async def stream_routed_answer(
+    book_id: str,
+    message: str,
+    history: list[ChatMessage],
+    current_page: int | None = None,
+):
     app = build_phase2_graph()
     state = await app.ainvoke(
         {
             "query": message,
             "book_id": book_id,
             "chat_history": history,
+            "current_page": current_page,
         }
     )
     async for event in stream_prompted_answer(

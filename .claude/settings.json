@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(.env*)",
+      "Write(.env*)",
+      "Edit(*.env)",
+      "Write(*.env)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd C:/Users/Celavi/Documents/HelpMeLearn/backend && .venv/Scripts/python -m pytest -x -q 2>&1 | tail -20"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python -m pytest tests/test_position_filter.py tests/test_chat_stream_integration.py -v)",
+      "Bash(.venv/Scripts/python -m pytest -v)",
+      "Bash(grep -n \"note_saved\\\\|note_aware\" tests/*.py)",
+      "Bash(curl -s http://127.0.0.1:8000/api/health)",
+      "Bash(curl:*)",
+      "Bash(.venv/Scripts/python -m pytest -q)"
+    ]
+  }
+}

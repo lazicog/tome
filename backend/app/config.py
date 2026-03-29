@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     reranker_enabled: bool = True
     query_rewrite_enabled: bool = True
     phase2_routing_enabled: bool = True
-    use_sqlite_storage: bool = False
+    use_sqlite_storage: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
