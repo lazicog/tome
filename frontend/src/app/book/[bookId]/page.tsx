@@ -537,39 +537,44 @@ export default function BookPage() {
           className="relative flex-shrink-0 min-h-0 flex transition-all duration-300 ease-in-out"
           style={{ width: chatOpen ? "62%" : "100%" }}
         >
-          {/* Left reading-progress rail */}
-          <div
-            className="w-11 flex-shrink-0 flex flex-col items-center py-3"
-            style={{ borderRight: "1px solid #1C1C1C" }}
-          >
-            <div className="flex-1 w-0.5 rounded-full relative overflow-hidden" style={{ background: "#1C1C1C" }}>
-              <div
-                className="absolute top-0 left-0 w-full rounded-full transition-all duration-500"
-                style={{
-                  height: numPages > 0 ? `${(currentPage / numPages) * 100}%` : "0%",
-                  background: "rgba(99,102,241,0.45)",
-                }}
+          {/* Inner wrapper — centered with max-width in reading mode */}
+          <div className={`flex flex-1 min-w-0 min-h-0 transition-all duration-300 ease-in-out${!chatOpen ? " max-w-4xl w-full mx-auto" : ""}`}>
+
+            {/* Left reading-progress rail */}
+            <div
+              className="w-11 flex-shrink-0 flex flex-col items-center py-3"
+              style={{ borderRight: "1px solid #1C1C1C" }}
+            >
+              <div className="flex-1 w-0.5 rounded-full relative overflow-hidden" style={{ background: "#1C1C1C" }}>
+                <div
+                  className="absolute top-0 left-0 w-full rounded-full transition-all duration-500"
+                  style={{
+                    height: numPages > 0 ? `${(currentPage / numPages) * 100}%` : "0%",
+                    background: "rgba(99,102,241,0.45)",
+                  }}
+                />
+              </div>
+              {numPages > 0 && (
+                <span
+                  className="mt-2 text-[9px] tabular-nums select-none"
+                  style={{ color: "#404040", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                >
+                  {currentPage}/{numPages}
+                </span>
+              )}
+            </div>
+
+            {/* PDF viewer */}
+            <div className="flex-1 min-w-0 min-h-0">
+              <PdfViewer
+                url={pdfUrl}
+                title={book?.title}
+                goToPage={goToPage}
+                onPageChange={setCurrentPage}
+                onNumPagesChange={setNumPages}
               />
             </div>
-            {numPages > 0 && (
-              <span
-                className="mt-2 text-[9px] tabular-nums select-none"
-                style={{ color: "#404040", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-              >
-                {currentPage}/{numPages}
-              </span>
-            )}
-          </div>
 
-          {/* PDF viewer */}
-          <div className="flex-1 min-w-0 min-h-0">
-            <PdfViewer
-              url={pdfUrl}
-              title={book?.title}
-              goToPage={goToPage}
-              onPageChange={setCurrentPage}
-              onNumPagesChange={setNumPages}
-            />
           </div>
 
           {/* Chat toggle — floats on the right edge, always visible */}
