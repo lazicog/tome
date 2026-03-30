@@ -578,29 +578,41 @@ export default function BookPage() {
               />
             </div>
 
-            {/* Right rail — mirror of left, only in reading mode */}
+            {/* Right rail — large click zones in reading mode */}
             {!chatOpen && (
               <div
-                className="w-11 flex-shrink-0 flex flex-col items-center py-3 gap-4"
+                className="w-11 flex-shrink-0 flex flex-col"
                 style={{ borderLeft: "1px solid #1C1C1C" }}
               >
-                {/* Toggle button — bring chat back */}
+                {/* Chat zone — 80% */}
                 <button
                   onClick={() => setChatOpen(true)}
-                  className="flex items-center justify-center w-7 h-7 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
-                  title="Show chat"
+                  className="group w-full flex flex-col items-center justify-center gap-2 transition-colors hover:bg-[#151515]"
+                  style={{ flex: 4, borderBottom: "1px solid #1C1C1C" }}
+                  title="Open chat"
                 >
-                  <PanelRightOpen size={13} />
+                  <PanelRightOpen size={14} className="text-[#404040] group-hover:text-[#737373] transition-colors" />
+                  <span
+                    className="text-[9px] select-none text-[#303030] group-hover:text-[#404040] transition-colors"
+                    style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                  >
+                    Chat
+                  </span>
                 </button>
-                {/* Spacer */}
-                <div className="flex-1" />
-                {/* Notes shortcut */}
+                {/* Notes zone — 20% */}
                 <button
                   onClick={() => setNotesOpen(true)}
-                  className="flex items-center justify-center w-7 h-7 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
-                  title="Notes"
+                  className="group w-full flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-[#151515]"
+                  style={{ flex: 1 }}
+                  title="Open notes"
                 >
-                  <StickyNote size={13} />
+                  <StickyNote size={13} className="text-[#404040] group-hover:text-[#737373] transition-colors" />
+                  <span
+                    className="text-[9px] select-none text-[#303030] group-hover:text-[#404040] transition-colors"
+                    style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                  >
+                    Notes
+                  </span>
                 </button>
               </div>
             )}
