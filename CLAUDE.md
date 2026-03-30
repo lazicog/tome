@@ -44,12 +44,12 @@ Copy `.env.example` to `.env` in the project root. Key variables:
 ## Workflow
 
 ### GitHub operations
-Always use `gh` CLI for all GitHub operations — pushing, creating PRs, viewing issues, etc. Never use raw `git push` or other git remote commands.
+Use `gh` CLI for GitHub operations (PRs, issues, CI). Use `git push` for pushing commits — `gh` has no push equivalent.
 
 ```bash
-gh repo view          # View repo info
 gh pr create          # Create a pull request
 gh pr list            # List open PRs
+gh run view           # Check CI status
 ```
 
 ### Branching
