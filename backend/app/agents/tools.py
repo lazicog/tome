@@ -42,6 +42,8 @@ THINKING_LABELS: dict[str, str] = {
     "search_book": "Searching book…",
     "get_page_text": "Reading page…",
     "save_note": "Saving note…",
+    "update_note": "Updating note…",
+    "list_notes": "Checking notes…",
     "generate_quiz": "Building quiz…",
     "web_search": "Searching web…",
 }
@@ -113,6 +115,37 @@ def build_tools(
         return f"Note saved: {title}"
 
     @tool
+    async def list_notes(query: str = "", page_number: int | None = None) -> str:
+        """List existing notes for this book. Call this before saving a new note to check if
+        a relevant note already exists — prefer updating over creating a duplicate.
+        Optionally filter by a search query or page number.
+        Returns up to 10 notes with their IDs, titles, and a content preview."""
+        from app.services.notes import list_notes as _list
+        notes = await _list(book_id, page_number=page_number, search=query or None)
+        if not notes:
+            return "No notes found."
+        lines = [
+            f"[ID: {n['id']}] {n['title'] or '(untitled)'} — {n['content'][:200]}"
+            for n in notes[:10]
+        ]
+        return "\n".join(lines)
+
+    @tool
+    async def update_note(note_id: str, title: str | None = None, content: str | None = None, tags: str | None = None) -> str:
+        """Update an existing note by ID (obtained from list_notes).
+        Choose the update strategy based on context:
+        - Append new findings to a running summary
+        - Rewrite if the existing content is incomplete or outdated
+        - Add a clearly labelled new section if the topic is adjacent but distinct
+        At least one of title, content, or tags must be provided."""
+        from app.services.notes import update_note as _update
+        updated = await _update(note_id, title=title, content=content, tags=tags)
+        if not updated:
+            return f"Note {note_id} not found."
+        pending_notes.append({"title": updated["title"], "id": note_id, "action": "updated"})
+        return f"Note updated: {updated['title']}"
+
+    @tool
     async def generate_quiz(topic: str) -> str:
         """Generate quiz questions on a topic using content from the book.
         Returns formatted questions with answer key."""
@@ -142,7 +175,7 @@ def build_tools(
             )
         return str(content)
 
-    tools: list = [search_book, get_page_text, save_note, generate_quiz]
+    tools: list = [search_book, get_page_text, save_note, list_notes, update_note, generate_quiz]
 
     if settings.web_search_enabled:
         @tool

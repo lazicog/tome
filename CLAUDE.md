@@ -43,6 +43,15 @@ Copy `.env.example` to `.env` in the project root. Key variables:
 
 ## Workflow
 
+### GitHub operations
+Always use `gh` CLI for all GitHub operations — pushing, creating PRs, viewing issues, etc. Never use raw `git push` or other git remote commands.
+
+```bash
+gh repo view          # View repo info
+gh pr create          # Create a pull request
+gh pr list            # List open PRs
+```
+
 ### Branching
 Use feature branches even when working solo: `feature/short-description`. Keeps `master` clean and makes history readable for open-source contributors.
 

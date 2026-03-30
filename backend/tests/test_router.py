@@ -15,6 +15,8 @@ def test_thinking_label_known() -> None:
     assert thinking_label("search_book") == "Searching book…"
     assert thinking_label("get_page_text") == "Reading page…"
     assert thinking_label("save_note") == "Saving note…"
+    assert thinking_label("list_notes") == "Checking notes…"
+    assert thinking_label("update_note") == "Updating note…"
     assert thinking_label("generate_quiz") == "Building quiz…"
     assert thinking_label("web_search") == "Searching web…"
 
@@ -25,8 +27,8 @@ def test_thinking_label_unknown() -> None:
     assert "mystery_tool" in result
 
 
-def test_build_tools_returns_base_four(monkeypatch) -> None:
-    """build_tools returns 4 tools when web_search is disabled."""
+def test_build_tools_returns_base_six(monkeypatch) -> None:
+    """build_tools returns 6 tools when web_search is disabled."""
     import app.agents.tools as tools_module
     monkeypatch.setattr(tools_module.settings, "web_search_enabled", False)
 
@@ -38,7 +40,7 @@ def test_build_tools_returns_base_four(monkeypatch) -> None:
         web_sources=[],
     )
     names = {t.name for t in tools}
-    assert names == {"search_book", "get_page_text", "save_note", "generate_quiz"}
+    assert names == {"search_book", "get_page_text", "save_note", "list_notes", "update_note", "generate_quiz"}
 
 
 def test_build_tools_adds_web_search_when_enabled(monkeypatch) -> None:
@@ -54,4 +56,4 @@ def test_build_tools_adds_web_search_when_enabled(monkeypatch) -> None:
     )
     names = {t.name for t in tools}
     assert "web_search" in names
-    assert len(names) == 5
+    assert len(names) == 7

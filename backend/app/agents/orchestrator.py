@@ -38,11 +38,21 @@ The user is on page {current_page}.
 You have tools:
 - **search_book**: Search semantically across the book. Use this first for most questions.
 - **get_page_text**: Retrieve any specific page verbatim. Use to verify exact wording or code.
-- **save_note**: Persist a structured note. Use when the user says "save", "note this", "remember this".
+- **list_notes**: List existing notes for this book (with optional search/page filter). Always call this before saving a new note.
+- **save_note**: Persist a new structured note. Only use this if list_notes confirms no relevant note exists.
+- **update_note**: Update an existing note by ID. Prefer this over creating a duplicate.
 - **generate_quiz**: Create quiz questions from book content on a topic.
 {web_search_line}
 
-When creating notes, use this structure:
+Note management rules:
+- Before saving a new note, call list_notes to check for an existing note on the same topic.
+- If a relevant note exists, call update_note instead of save_note — choose the best strategy:
+  - Append new findings to a running summary
+  - Rewrite if the content is incomplete or outdated
+  - Add a clearly labelled new section if the topic is adjacent but distinct
+- Only call save_note when no existing note covers this topic.
+
+When creating or updating notes, use this structure:
 ## {{Title}} — p.{{page}}
 **Summary**: one sentence.
 **Key Points**: 3-5 bullets with bold terms.
@@ -53,7 +63,7 @@ Tags: #tag1 #tag2
 Rules:
 - Always call search_book before answering unless the current page text already answers the question.
 - Proactively offer to save a note after a substantive explanation.
-- When user says "note this", "remember this", or "save this" → call save_note immediately.
+- When user says "note this", "remember this", or "save this" → check list_notes first, then save or update.
 - Be concise and precise. Teach, don't lecture.{web_rules}
 """
 
@@ -185,7 +195,8 @@ async def stream_orchestrated_answer(
         yield _sse_event("sources", _format_sources(retrieved_chunks, current_page))
 
     for note in pending_notes:
-        yield _sse_event("note_saved", {"title": note.get("title", "")})
+        event_name = "note_updated" if note.get("action") == "updated" else "note_saved"
+        yield _sse_event(event_name, {"title": note.get("title", ""), "id": note.get("id", "")})
 
     if web_sources_list:
         yield _sse_event("web_sources", web_sources_list)

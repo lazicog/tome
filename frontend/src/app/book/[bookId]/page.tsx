@@ -442,6 +442,10 @@ export default function BookPage() {
             showToast("Note saved");
             setNotesRefresh((n) => n + 1);
           }
+          if (event === "note_updated") {
+            showToast("Note updated");
+            setNotesRefresh((n) => n + 1);
+          }
           if (event === "web_sources") {
             try { setWebSources(JSON.parse(data) as WebSource[]); } catch { /* */ }
           }
