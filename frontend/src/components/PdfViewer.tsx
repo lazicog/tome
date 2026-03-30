@@ -16,12 +16,16 @@ interface PdfViewerProps {
   onNumPagesChange?: (n: number) => void;
 }
 
+const RENDER_BEHIND = 3; // pages before current to keep mounted
+const RENDER_AHEAD  = 6; // pages after  current to pre-mount
+
 export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPagesChange }: PdfViewerProps) {
   const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
   const [inputVal, setInputVal] = useState("1");
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [estPageHeight, setEstPageHeight] = useState(0); // placeholder height for out-of-window pages
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -190,21 +194,37 @@ export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPag
             </div>
           }
         >
-          {Array.from({ length: numPages }, (_, i) => (
-            <div
-              key={i + 1}
-              ref={(el) => { pageRefs.current[i] = el; }}
-              data-page={i + 1}
-              className="flex justify-center mb-3"
-            >
-              <Page
-                pageNumber={i + 1}
-                width={pageWidth}
-                renderTextLayer
-                renderAnnotationLayer
-              />
-            </div>
-          ))}
+          {Array.from({ length: numPages }, (_, i) => {
+            const n = i + 1;
+            // Before we have a height sample render the first 8 pages; after that
+            // only mount <Page> for pages within the sliding window.
+            const inWindow = estPageHeight === 0
+              ? n <= 8
+              : n >= pageNum - RENDER_BEHIND && n <= pageNum + RENDER_AHEAD;
+            return (
+              <div
+                key={n}
+                ref={(el) => { pageRefs.current[i] = el; }}
+                data-page={n}
+                className="flex justify-center mb-3"
+                style={!inWindow && estPageHeight > 0 ? { height: estPageHeight } : undefined}
+              >
+                {inWindow && (
+                  <Page
+                    pageNumber={n}
+                    width={pageWidth}
+                    renderTextLayer
+                    renderAnnotationLayer
+                    onRenderSuccess={() => {
+                      // Keep placeholder height calibrated to whatever just rendered
+                      const h = pageRefs.current[i]?.offsetHeight;
+                      if (h && h > 0) setEstPageHeight(h);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
         </Document>
       </div>
 
