@@ -37,3 +37,5 @@ This directory contains a chronological journal of development work on HelpMeLea
 | [2026-03-28](2026-03-28-spec-workflow-setup.md) | Spec Workflow Setup |
 | [2026-03-28](2026-03-28-phase2-mvp-implementation-start.md) | Phase 2 MVP Implementation Start |
 | [2026-03-29](2026-03-29-notes-rag-agent-upgrade.md) | Notes, RAG v2, and Agent System Upgrade |
+| [2026-03-30](2026-03-30-orchestrator-pdf-viewer.md) | Orchestrator Overhaul + PDF Viewer |
+| [2026-03-31](2026-03-31-pdf-viewer-ux-polish.md) | PDF Viewer UX Polish |

@@ -9,6 +9,7 @@ At the start of the next session, say:
 `Read docs/SESSION-HANDOFF.md and continue from there.`
 
 Devlogs for context:
+- PDF viewer UX polish: `docs/devlog/2026-03-31-pdf-viewer-ux-polish.md`
 - Orchestrator overhaul + PDF viewer: `docs/devlog/2026-03-30-orchestrator-pdf-viewer.md`
 - Notes + RAG v2 + agent upgrade: `docs/devlog/2026-03-29-notes-rag-agent-upgrade.md`
 
@@ -56,6 +57,17 @@ Devlogs for context:
 - rAF-loop keyboard scroll (ArrowUp/Down), instant page jumps (ArrowLeft/Right)
 - Bottom toolbar: page nav, page number input, zoom controls
 - Text selection + annotation layers; / shortcut focuses chat input
+
+### PDF Viewer UX Polish — COMPLETE (2026-03-31)
+- Virtual page rendering — 9-page sliding window, estPageHeight placeholders; fixes 350+ page perf
+- Reading mode — chat-closed expands to full width, content centers at max-w-4xl (896px) with depth shadow
+- Left reading-progress rail — indigo fill + rotated page fraction label
+- Right rail large click zones — top 80% opens chat, bottom 20% opens notes (flex: 4 / flex: 1)
+- Chat toggle button on divider edge; browser scrollbar removed (html/body overflow: hidden)
+- Uniform zoom via 800px baseWidth cap; debounced ResizeObserver (320ms)
+- react-pdf CSS sentinels in globals.css; AbortException console filter
+- Replaced all JS hover handlers with Tailwind group/group-hover
+- Devlog: docs/devlog/2026-03-31-pdf-viewer-ux-polish.md
 
 ### Phoenix + Eval Pipeline — IN PROGRESS (spec written, implementation next)
 - Spec: docs/specs/2026-03-30-phoenix-eval-pipeline.md
@@ -109,6 +121,7 @@ cd backend
 - Eval approach: LLM-as-judge (faithfulness + helpfulness scores in SQLite)
 - Web search: Tavily primary, DuckDuckGo fallback, opt-in via WEB_SEARCH_ENABLED=true
 - Solo workflow: Direct commits to master
+- GitHub operations: use `gh` CLI (not raw git remote commands)
 
 ---
 
@@ -121,6 +134,7 @@ cd backend
 - Existing books need re-ingest after chunker changes
 - LLM tool-calling requires function-calling capable model (GPT-4o-mini, Claude 3.x)
 - WEB_SEARCH_ENABLED=false by default
+- Stale .next cache can cause webpack chunk errors — delete .next/ if mysterious module-not-found errors appear
 
 ---
 

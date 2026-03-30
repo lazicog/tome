@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **PDF viewer UX polish** (see `docs/devlog/2026-03-31-pdf-viewer-ux-polish.md`):
+  - Virtual page rendering — sliding window of 9 mounted pages (3 behind + 6 ahead); placeholder divs with `estPageHeight` for correct scrollbar; fixes 350+ page book performance
+  - Reading mode — chat-closed state centers PDF content at `max-w-4xl` (896px) with dark margins and a depth shadow; `transition-all duration-300` animates the width change
+  - Left reading-progress rail — indigo fill bar + rotated `currentPage / numPages` fraction label
+  - Right rail large click zones — top 80% opens chat, bottom 20% opens notes; full-height `flex: 4` / `flex: 1` buttons with rotated labels and `group-hover` reveal
+  - Chat toggle button on the divider edge (absolute, `translate-x-1/2`); hides in reading mode
+  - Browser scrollbar removal — `html, body { overflow: hidden }` locks the viewport; all scrolling inside containers with custom 5px scrollbars
+  - `baseWidth` cap (`Math.min(containerWidth - 32, 800)`) normalises zoom level between chat-on and chat-off states
+  - Debounced ResizeObserver (320ms) prevents mid-transition re-renders during panel animation
+  - react-pdf CSS sentinel values in `globals.css` fix TextLayer/AnnotationLayer initialisation race
+  - Module-level `console.error` filter suppresses expected `AbortException: TextLayer task cancelled` noise
+  - Replaced 30+ `onMouseEnter/Leave` JS hover handlers with Tailwind `group`/`group-hover` classes
+
 - **Single orchestrator agent** (see `docs/devlog/2026-03-30-orchestrator-pdf-viewer.md`):
   - Replaced 5-agent LangGraph routing system with a single tool-calling orchestrator
   - Tools: `search_book`, `get_page_text`, `save_note`, `generate_quiz`, `web_search` (opt-in via `WEB_SEARCH_ENABLED`)
