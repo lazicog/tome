@@ -137,6 +137,8 @@ html, body {
 .prose-chat p { margin: 0.35em 0; }
 .prose-chat strong { color: #F0F0F0; font-weight: 600; }
 .prose-chat ul, .prose-chat ol { margin: 0.35em 0; padding-left: 1.25em; }
+.prose-chat ul { list-style-type: disc; }
+.prose-chat ol { list-style-type: decimal; }
 .prose-chat li { margin: 0.12em 0; }
 .prose-chat code {
   background: rgba(99, 102, 241, 0.12);
