@@ -162,20 +162,14 @@ function SaveNoteDialog({
         <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-3 h-7 rounded-md text-xs transition-colors"
-            style={{ color: "#737373" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+            className="px-3 h-7 rounded-md text-xs transition-colors text-[#737373] hover:text-[#F0F0F0]"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={loading || !title.trim()}
-            className="px-3 h-7 rounded-md text-xs font-medium transition-colors disabled:opacity-40"
-            style={{ background: "#6366F1", color: "#F0F0F0" }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#4F46E5"; }}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#6366F1")}
+            className="px-3 h-7 rounded-md text-xs font-medium transition-colors disabled:opacity-40 bg-indigo-500 text-[#F0F0F0] hover:bg-indigo-600"
           >
             Save note
           </button>
@@ -233,10 +227,7 @@ const MessageBubble = memo(function MessageBubble({
             {content && !sending && (
               <button
                 onClick={() => onSaveAsNote(content)}
-                className="mt-2 flex items-center gap-1 text-[10px] transition-colors"
-                style={{ color: "#404040" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#6366F1")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#404040")}
+                className="mt-2 flex items-center gap-1 text-[10px] transition-colors text-[#404040] hover:text-indigo-400"
               >
                 <Bookmark size={11} /> Save as note
               </button>
@@ -507,10 +498,7 @@ export default function BookPage() {
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/"
-            className="p-1.5 rounded-md transition-colors flex-shrink-0"
-            style={{ color: "#737373" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+            className="p-1.5 rounded-md transition-colors flex-shrink-0 text-[#737373] hover:text-[#F0F0F0]"
           >
             <ArrowLeft size={15} />
           </Link>
@@ -527,10 +515,8 @@ export default function BookPage() {
           <span className="text-xs" style={{ color: "#737373" }}>p. {currentPage}</span>
           <button
             onClick={() => setNotesOpen(true)}
-            className="flex items-center gap-1.5 px-3 h-7 rounded-md text-xs border transition-colors"
-            style={{ borderColor: "#303030", color: "#F0F0F0", background: "#151515" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#1C1C1C")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#151515")}
+            className="flex items-center gap-1.5 px-3 h-7 rounded-md text-xs border transition-colors text-[#F0F0F0] hover:bg-[#1C1C1C]"
+            style={{ borderColor: "#303030", background: "#151515" }}
           >
             <StickyNote size={13} />
             Notes
@@ -556,10 +542,7 @@ export default function BookPage() {
           <div className="flex-shrink-0 border-b" style={{ borderColor: "#1C1C1C" }}>
             <button
               onClick={() => setSessionsExpanded((v) => !v)}
-              className="w-full flex items-center justify-between px-4 h-9 text-xs transition-colors"
-              style={{ color: "#737373" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+              className="w-full flex items-center justify-between px-4 h-9 text-xs transition-colors text-[#737373] hover:text-[#F0F0F0]"
             >
               {/* Fix 2: formatted session label */}
               <span>
@@ -624,10 +607,7 @@ export default function BookPage() {
                     <button
                       key={s}
                       onClick={() => void sendMessage(s)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs text-left transition-colors"
-                      style={{ borderColor: "#242424", color: "#737373", background: "#151515" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#303030"; e.currentTarget.style.color = "#F0F0F0"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#242424"; e.currentTarget.style.color = "#737373"; }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs text-left transition-colors border-[#242424] text-[#737373] bg-[#151515] hover:border-[#303030] hover:text-[#F0F0F0]"
                     >
                       <Sparkles size={11} className="text-indigo-400 flex-shrink-0" />
                       {s}
@@ -660,10 +640,7 @@ export default function BookPage() {
             <div className="flex-shrink-0 border-t" style={{ borderColor: "#1C1C1C" }}>
               <button
                 onClick={() => setSourcesExpanded((v) => !v)}
-                className="w-full flex items-center gap-1.5 px-4 py-2 text-[11px] transition-colors"
-                style={{ color: "#404040" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#737373")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#404040")}
+                className="w-full flex items-center gap-1.5 px-4 py-2 text-[11px] transition-colors text-[#404040] hover:text-[#737373]"
               >
                 <ChevronRight
                   size={12}
@@ -678,10 +655,7 @@ export default function BookPage() {
                     <button
                       key={s.chunk_id}
                       onClick={() => { const p = s.page_numbers[0]; if (p) setGoToPage(p); }}
-                      className="w-full flex flex-col px-4 py-2 text-left border-t transition-colors"
-                      style={{ borderColor: "#1C1C1C" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#151515")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      className="w-full flex flex-col px-4 py-2 text-left border-t transition-colors border-[#1C1C1C] hover:bg-[#151515]"
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <FileText size={11} style={{ color: "#737373", flexShrink: 0 }} />
@@ -729,10 +703,7 @@ export default function BookPage() {
             <div className="flex-shrink-0 border-t" style={{ borderColor: "#1C1C1C" }}>
               <details>
                 <summary
-                  className="flex items-center gap-1.5 px-4 py-2 text-[11px] cursor-pointer list-none transition-colors"
-                  style={{ color: "#404040" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#737373")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#404040")}
+                  className="flex items-center gap-1.5 px-4 py-2 text-[11px] cursor-pointer list-none transition-colors text-[#404040] hover:text-[#737373]"
                 >
                   <ChevronRight size={12} className="flex-shrink-0" />
                   Web sources ({webSources.length})

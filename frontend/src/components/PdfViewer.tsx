@@ -193,10 +193,7 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
         <button
           onClick={() => scrollToPage(Math.max(1, pageNum - 1))}
           disabled={pageNum <= 1}
-          className="p-1 rounded transition-colors disabled:opacity-30"
-          style={{ color: "#737373" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+          className="p-1 rounded transition-colors disabled:opacity-30 text-[#737373] hover:text-[#F0F0F0]"
         >
           <ChevronLeft size={14} />
         </button>
@@ -219,10 +216,7 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
         <button
           onClick={() => scrollToPage(Math.min(numPages || 1, pageNum + 1))}
           disabled={pageNum >= numPages}
-          className="p-1 rounded transition-colors disabled:opacity-30"
-          style={{ color: "#737373" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+          className="p-1 rounded transition-colors disabled:opacity-30 text-[#737373] hover:text-[#F0F0F0]"
         >
           <ChevronRight size={14} />
         </button>
@@ -233,10 +227,7 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
         {/* Zoom out */}
         <button
           onClick={() => setZoomLevel((z) => Math.max(0.5, +(z - 0.15).toFixed(2)))}
-          className="p-1 rounded transition-colors"
-          style={{ color: "#737373" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+          className="p-1 rounded transition-colors text-[#737373] hover:text-[#F0F0F0]"
           title="Zoom out"
         >
           <ZoomOut size={13} />
@@ -249,10 +240,7 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
         {/* Zoom in */}
         <button
           onClick={() => setZoomLevel((z) => Math.min(3.0, +(z + 0.15).toFixed(2)))}
-          className="p-1 rounded transition-colors"
-          style={{ color: "#737373" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+          className="p-1 rounded transition-colors text-[#737373] hover:text-[#F0F0F0]"
           title="Zoom in"
         >
           <ZoomIn size={13} />

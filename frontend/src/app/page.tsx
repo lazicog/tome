@@ -40,7 +40,6 @@ function BookCard({
   onDelete: () => void;
   onReingest: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   const date = new Date(book.created_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -49,19 +48,13 @@ function BookCard({
 
   return (
     <div
-      className="relative rounded-lg border p-4 cursor-pointer transition-colors duration-150"
-      style={{
-        background: "#151515",
-        borderColor: hovered ? "#303030" : "#242424",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="group relative rounded-lg border p-4 cursor-pointer transition-colors duration-150 border-[#242424] hover:border-[#303030]"
+      style={{ background: "#151515" }}
       onClick={onOpen}
     >
       {/* Hover action icons */}
       <div
-        className="absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-100"
-        style={{ opacity: hovered ? 1 : 0 }}
+        className="absolute top-3 right-3 flex items-center gap-1 transition-opacity duration-100 opacity-0 group-hover:opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
         <button
