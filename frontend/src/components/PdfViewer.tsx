@@ -216,10 +216,10 @@ export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPag
                     renderTextLayer
                     renderAnnotationLayer
                     onRenderSuccess={() => {
-                      // Keep placeholder height calibrated to whatever just rendered
                       const h = pageRefs.current[i]?.offsetHeight;
                       if (h && h > 0) setEstPageHeight(h);
                     }}
+                    onRenderTextLayerError={() => { /* AbortException on virtual unmount — benign */ }}
                   />
                 )}
               </div>
