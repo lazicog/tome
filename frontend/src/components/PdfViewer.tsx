@@ -10,11 +10,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PdfViewerProps {
   url: string;
+  title?: string;
   goToPage?: number;
   onPageChange?: (page: number) => void;
+  onNumPagesChange?: (n: number) => void;
 }
 
-export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProps) {
+export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPagesChange }: PdfViewerProps) {
   const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
   const [inputVal, setInputVal] = useState("1");
@@ -141,6 +143,23 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
   return (
     <div ref={containerRef} className="flex flex-col h-full" style={{ background: "#0E0E0E" }}>
 
+      {/* ── Document header ── */}
+      {(title || numPages > 0) && (
+        <div
+          className="flex items-center justify-between px-4 h-8 flex-shrink-0 border-b"
+          style={{ background: "#111111", borderColor: "#1C1C1C" }}
+        >
+          <span className="text-[11px] truncate" style={{ color: "#404040" }}>
+            {title ?? ""}
+          </span>
+          {numPages > 0 && (
+            <span className="text-[11px] flex-shrink-0 ml-2 tabular-nums" style={{ color: "#303030" }}>
+              {pageNum} / {numPages}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* ── Scrollable pages ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
         <Document
@@ -149,6 +168,7 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
             setNumPages(numPages);
             numPagesRef.current = numPages;
             pageRefs.current = new Array(numPages).fill(null);
+            onNumPagesChange?.(numPages);
           }}
           loading={
             <div className="flex flex-col items-center justify-center mt-24 gap-3">

@@ -17,6 +17,8 @@ import {
   Bookmark,
   ChevronDown,
   ChevronRight,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 
 import dynamic from "next/dynamic";
@@ -248,6 +250,8 @@ export default function BookPage() {
   const [book, setBook] = useState<Book | null>(null);
   const [goToPage, setGoToPage] = useState<number | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
+  const [numPages, setNumPages] = useState(0);
+  const [chatOpen, setChatOpen] = useState(true);
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -527,16 +531,61 @@ export default function BookPage() {
       {/* ── Main: PDF + Chat ── */}
       <div className="flex flex-1 min-h-0">
 
-        {/* PDF panel — 62% */}
-        <div className="flex-shrink-0 min-h-0" style={{ width: "62%" }}>
-          <PdfViewer url={pdfUrl} goToPage={goToPage} onPageChange={setCurrentPage} />
+        {/* PDF panel — 62% (or 100% when chat hidden) */}
+        <div
+          className="flex-shrink-0 min-h-0 flex transition-all duration-300 ease-in-out"
+          style={{ width: chatOpen ? "62%" : "100%" }}
+        >
+          {/* Left reading-progress rail */}
+          <div
+            className="w-11 flex-shrink-0 flex flex-col items-center py-3"
+            style={{ borderRight: "1px solid #1C1C1C" }}
+          >
+            <div className="flex-1 w-0.5 rounded-full relative overflow-hidden" style={{ background: "#1C1C1C" }}>
+              <div
+                className="absolute top-0 left-0 w-full rounded-full transition-all duration-500"
+                style={{
+                  height: numPages > 0 ? `${(currentPage / numPages) * 100}%` : "0%",
+                  background: "rgba(99,102,241,0.45)",
+                }}
+              />
+            </div>
+            {numPages > 0 && (
+              <span
+                className="mt-2 text-[9px] tabular-nums select-none"
+                style={{ color: "#404040", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+              >
+                {currentPage}/{numPages}
+              </span>
+            )}
+          </div>
+
+          {/* PDF viewer */}
+          <div className="flex-1 min-w-0 min-h-0">
+            <PdfViewer
+              url={pdfUrl}
+              title={book?.title}
+              goToPage={goToPage}
+              onPageChange={setCurrentPage}
+              onNumPagesChange={setNumPages}
+            />
+          </div>
         </div>
 
-        {/* Divider */}
-        <div className="w-px flex-shrink-0" style={{ background: "#242424" }} />
+        {/* Divider + chat toggle button */}
+        <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: "1px", background: "#242424" }}>
+          <button
+            onClick={() => setChatOpen((v) => !v)}
+            className="absolute z-10 flex items-center justify-center w-5 h-10 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
+            style={{ background: "#0E0E0E", border: "1px solid #242424" }}
+            title={chatOpen ? "Hide chat" : "Show chat"}
+          >
+            {chatOpen ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
+          </button>
+        </div>
 
-        {/* Fix 6: min-w-0 prevents content from expanding the panel */}
-        <div className="flex flex-col min-h-0 flex-1 min-w-0">
+        {/* Chat panel */}
+        <div className={`flex flex-col min-h-0 transition-all duration-300 ease-in-out overflow-hidden ${chatOpen ? "flex-1 min-w-0" : "w-0 flex-shrink-0"}`}>
 
           {/* Sessions pill */}
           <div className="flex-shrink-0 border-b" style={{ borderColor: "#1C1C1C" }}>
