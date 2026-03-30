@@ -537,8 +537,11 @@ export default function BookPage() {
           className="relative flex-shrink-0 min-h-0 flex transition-all duration-300 ease-in-out"
           style={{ width: chatOpen ? "62%" : "100%" }}
         >
-          {/* Inner wrapper — centered with max-width in reading mode */}
-          <div className={`flex flex-1 min-w-0 min-h-0 transition-all duration-300 ease-in-out${!chatOpen ? " max-w-4xl w-full mx-auto" : ""}`}>
+          {/* Inner wrapper — centered with max-width + shadow frame in reading mode */}
+          <div
+            className={`flex flex-1 min-w-0 min-h-0 transition-all duration-300 ease-in-out${!chatOpen ? " max-w-4xl w-full mx-auto" : ""}`}
+            style={!chatOpen ? { boxShadow: "0 0 0 1px #1C1C1C, 0 8px 40px rgba(0,0,0,0.6)" } : undefined}
+          >
 
             {/* Left reading-progress rail */}
             <div
@@ -575,17 +578,46 @@ export default function BookPage() {
               />
             </div>
 
+            {/* Right rail — mirror of left, only in reading mode */}
+            {!chatOpen && (
+              <div
+                className="w-11 flex-shrink-0 flex flex-col items-center py-3 gap-4"
+                style={{ borderLeft: "1px solid #1C1C1C" }}
+              >
+                {/* Toggle button — bring chat back */}
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="flex items-center justify-center w-7 h-7 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
+                  title="Show chat"
+                >
+                  <PanelRightOpen size={13} />
+                </button>
+                {/* Spacer */}
+                <div className="flex-1" />
+                {/* Notes shortcut */}
+                <button
+                  onClick={() => setNotesOpen(true)}
+                  className="flex items-center justify-center w-7 h-7 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
+                  title="Notes"
+                >
+                  <StickyNote size={13} />
+                </button>
+              </div>
+            )}
+
           </div>
 
-          {/* Chat toggle — floats on the right edge, always visible */}
-          <button
-            onClick={() => setChatOpen((v) => !v)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 flex items-center justify-center w-5 h-10 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
-            style={{ background: "#0E0E0E", border: "1px solid #242424" }}
-            title={chatOpen ? "Hide chat" : "Show chat"}
-          >
-            {chatOpen ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
-          </button>
+          {/* Chat toggle on divider edge — only when chat is open */}
+          {chatOpen && (
+            <button
+              onClick={() => setChatOpen(false)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 flex items-center justify-center w-5 h-10 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
+              style={{ background: "#0E0E0E", border: "1px solid #242424" }}
+              title="Hide chat"
+            >
+              <PanelRightClose size={13} />
+            </button>
+          )}
         </div>
 
         {/* Divider — only when chat is visible (avoids 100% + 1px overflow) */}

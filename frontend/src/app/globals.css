@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Lock viewport — no page-level scroll, all scrolling is inside containers ── */
+html, body {
+  overflow: hidden;
+  height: 100%;
+}
+
 /* ── react-pdf sentinel values (checked by TextLayer/AnnotationLayer before CSS chunk loads) ── */
 :root {
   --react-pdf-text-layer: 1;
