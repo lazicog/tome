@@ -29,16 +29,20 @@ export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPag
   const prevGoToPage = useRef<number | undefined>(undefined);
   const pageNumRef = useRef(1);
   const numPagesRef = useRef(0);
+  const resizeDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* Fit-to-width via ResizeObserver */
+  /* Fit-to-width via ResizeObserver — debounced so pages only re-render
+     once after a panel-width transition completes, not on every frame */
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const obs = new ResizeObserver((entries) => {
-      setContainerWidth(entries[0]?.contentRect.width ?? 0);
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (resizeDebounce.current) clearTimeout(resizeDebounce.current);
+      resizeDebounce.current = setTimeout(() => setContainerWidth(width), 320);
     });
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); if (resizeDebounce.current) clearTimeout(resizeDebounce.current); };
   }, []);
 
   const pageWidth = containerWidth > 0 ? (containerWidth - 32) * zoomLevel : undefined;
