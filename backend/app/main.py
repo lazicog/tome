@@ -15,8 +15,35 @@ from app.config import settings
 log = structlog.get_logger()
 
 
+def _setup_phoenix() -> None:
+    """Wire OpenTelemetry + LangChain instrumentation to a local Phoenix server."""
+    if not settings.phoenix_enabled:
+        return
+    try:
+        from openinference.instrumentation.langchain import LangChainInstrumentor
+        from opentelemetry import trace as otel_trace
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+        provider = TracerProvider()
+        provider.add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter(endpoint=settings.phoenix_endpoint))
+        )
+        otel_trace.set_tracer_provider(provider)
+        LangChainInstrumentor().instrument()
+        log.info("phoenix.instrumentation_ready", endpoint=settings.phoenix_endpoint)
+    except ImportError as exc:
+        log.warning(
+            "phoenix.packages_missing",
+            error=str(exc),
+            hint="pip install openinference-instrumentation-langchain opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc",
+        )
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    _setup_phoenix()
     log.info(
         "startup.config",
         llm_provider=settings.llm_provider,
@@ -29,6 +56,8 @@ async def lifespan(_app: FastAPI):
         score_threshold=settings.retrieval_score_threshold,
         phase2_routing=settings.phase2_routing_enabled,
         sqlite_storage=settings.use_sqlite_storage,
+        phoenix_enabled=settings.phoenix_enabled,
+        eval_enabled=settings.eval_enabled,
     )
     try:
         from app.rag.embeddings import _load_model

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.rag.retriever import search_chunks
 
@@ -28,3 +28,25 @@ async def debug_retrieve(
             for c in chunks
         ],
     }
+
+
+@router.get("/evals", summary="List recent LLM-as-judge eval results for a book")
+async def debug_list_evals(
+    book_id: str = Query(..., description="Book ID"),
+    limit: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    from app.services.evals import eval_stats, list_evals
+
+    evals = await list_evals(book_id, limit=limit)
+    stats = await eval_stats(book_id)
+    return {"book_id": book_id, "stats": stats, "evals": evals}
+
+
+@router.get("/evals/{eval_id}", summary="Get a single eval record")
+async def debug_get_eval(eval_id: str) -> dict:
+    from app.services.evals import get_eval
+
+    record = await get_eval(eval_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Eval not found")
+    return record

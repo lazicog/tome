@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     use_sqlite_storage: bool = True
     web_search_enabled: bool = False
     tavily_api_key: str = ""
+    phoenix_enabled: bool = False
+    phoenix_endpoint: str = "http://localhost:4317"
+    eval_enabled: bool = True
+    eval_model: str = ""  # defaults to llm_model if empty
 
     model_config = SettingsConfigDict(
         env_file=".env",

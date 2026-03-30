@@ -45,6 +45,31 @@ CREATE TABLE IF NOT EXISTS notes (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS evals (
+    id TEXT PRIMARY KEY,
+    session_id TEXT,
+    book_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+
+    user_message TEXT NOT NULL,
+    assistant_response TEXT NOT NULL,
+    retrieved_context TEXT,
+
+    tool_iterations INTEGER DEFAULT 0,
+    tools_called TEXT DEFAULT '[]',
+    used_retrieval INTEGER DEFAULT 0,
+    used_page_text INTEGER DEFAULT 0,
+    used_web_search INTEGER DEFAULT 0,
+
+    faithfulness_score REAL,
+    faithfulness_reason TEXT,
+    helpfulness_score REAL,
+    helpfulness_reason TEXT,
+
+    eval_model TEXT,
+    eval_duration_ms INTEGER
+);
 """
 
 _data_dir_override: Path | None = None

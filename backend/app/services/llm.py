@@ -25,6 +25,7 @@ def get_chat_model(
                 temperature=chosen_temp,
                 max_tokens=chosen_tokens,
                 streaming=True,
+                stream_options={"include_usage": True},
             )
         case "anthropic":
             return ChatAnthropic(

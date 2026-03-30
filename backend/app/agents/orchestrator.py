@@ -1,11 +1,15 @@
 """Single orchestrator agent that replaces the multi-agent routing graph.
 
 Streams SSE events: thinking → token → sources → note_saved → web_sources → done
+
+Also yields an EvalMetadata dict as the final item (not an SSE string) so that
+chat.py can fire the background eval task without re-parsing the stream.
 """
 
 import operator
+from dataclasses import dataclass, field
 from functools import reduce
-from typing import AsyncIterator
+from typing import AsyncGenerator
 
 import structlog
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -60,6 +64,14 @@ or user says "look up", "find docs", "latest version".
 - When web results differ from the book, point that out explicitly."""
 
 
+@dataclass
+class EvalMetadata:
+    """Passed back to chat.py after the stream to trigger background eval."""
+    retrieved_chunks: list[dict] = field(default_factory=list)
+    tools_called: list[str] = field(default_factory=list)
+    tool_iterations: int = 0
+
+
 def _build_system_prompt(current_page: int | None, page_text: str) -> str:
     if current_page and page_text:
         page_text_block = f"Page text:\n{page_text}"
@@ -95,7 +107,12 @@ async def stream_orchestrated_answer(
     message: str,
     history: list[ChatMessage],
     current_page: int | None = None,
-) -> AsyncIterator[str]:
+) -> AsyncGenerator[str | EvalMetadata, None]:
+    """
+    Yields SSE strings (str) followed by a single EvalMetadata object.
+    Consumers must handle both types: SSE strings are forwarded to clients,
+    EvalMetadata is used to trigger the background eval task.
+    """
     # Fetch current page text upfront
     page_text = ""
     if current_page:
@@ -107,6 +124,7 @@ async def stream_orchestrated_answer(
     retrieved_chunks: list[dict] = []
     pending_notes: list[dict] = []
     web_sources_list: list[dict] = []
+    tools_called: list[str] = []
 
     tools = build_tools(book_id, current_page, retrieved_chunks, pending_notes, web_sources_list)
 
@@ -120,14 +138,14 @@ async def stream_orchestrated_answer(
         HumanMessage(content=message),
     ]
 
+    tool_iterations = 0
+
     # Agentic streaming loop
     for iteration in range(MAX_TOOL_ITERATIONS):
         chunk_buffer = []
 
-        # Stream this LLM call
         async for chunk in llm_with_tools.astream(messages):
             chunk_buffer.append(chunk)
-            # Emit text tokens as they arrive (empty during tool-call rounds)
             text = _extract_text(chunk.content)
             if text:
                 yield _sse_event("token", text)
@@ -135,16 +153,17 @@ async def stream_orchestrated_answer(
         if not chunk_buffer:
             break
 
-        # Merge streamed chunks into a full message
         full_response: AIMessage = reduce(operator.add, chunk_buffer)
         messages.append(full_response)
 
         if not full_response.tool_calls:
-            break  # Done — all tokens already yielded above
+            break
 
-        # Execute each tool call
+        tool_iterations += 1
+
         for tc in full_response.tool_calls:
             tool_name = tc["name"]
+            tools_called.append(tool_name)
             yield _sse_event("thinking", thinking_label(tool_name))
 
             tool_fn = tool_map.get(tool_name)
@@ -172,3 +191,10 @@ async def stream_orchestrated_answer(
         yield _sse_event("web_sources", web_sources_list)
 
     yield _sse_event("done", "")
+
+    # Yield eval metadata last (not an SSE string — consumed by chat.py only)
+    yield EvalMetadata(
+        retrieved_chunks=list(retrieved_chunks),
+        tools_called=tools_called,
+        tool_iterations=tool_iterations,
+    )
