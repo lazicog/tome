@@ -8,6 +8,17 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, AlertCircle } from
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
+// The `warning` package calls console.error directly before invoking onRenderTextLayerError,
+// so we can't suppress the AbortException via a prop. Filter it at the source instead —
+// it's expected noise from virtual unmounting and is a no-op in production builds.
+if (typeof window !== "undefined") {
+  const _origError = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && args[0].includes("TextLayer task cancelled")) return;
+    _origError(...args);
+  };
+}
+
 interface PdfViewerProps {
   url: string;
   title?: string;

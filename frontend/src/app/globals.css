@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── react-pdf sentinel values (checked by TextLayer/AnnotationLayer before CSS chunk loads) ── */
+:root {
+  --react-pdf-text-layer: 1;
+  --react-pdf-annotation-layer: 1;
+}
+
 /* ── Tome design tokens (Linear-inspired) ── */
 @theme {
   --color-bg: #0E0E0E;
