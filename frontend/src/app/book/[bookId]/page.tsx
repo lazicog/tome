@@ -683,7 +683,7 @@ export default function BookPage() {
           <div
             ref={messagesContainerRef}
             onScroll={handleMessagesScroll}
-            className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+            className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-3"
           >
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-4">

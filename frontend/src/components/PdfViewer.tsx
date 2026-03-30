@@ -60,7 +60,11 @@ export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPag
     return () => { obs.disconnect(); if (resizeDebounce.current) clearTimeout(resizeDebounce.current); };
   }, []);
 
-  const pageWidth = containerWidth > 0 ? (containerWidth - 32) * zoomLevel : undefined;
+  // Cap base width so the PDF renders at a comfortable reading size regardless of
+  // how wide the panel is (e.g. when chat is open on a large monitor). Zoom still
+  // works correctly — it multiplies the capped base, not the raw container width.
+  const baseWidth = containerWidth > 0 ? Math.min(containerWidth - 32, 800) : 0;
+  const pageWidth = baseWidth > 0 ? baseWidth * zoomLevel : undefined;
 
   /* Scroll to a page element — instant, no CSS smooth (avoids clashing with rAF loop) */
   const scrollToPage = useCallback((n: number) => {
