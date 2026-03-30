@@ -1,23 +1,13 @@
+"""SSE and RAG utility helpers shared across agent modules."""
+
 import json
-from typing import AsyncIterator
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
-from app.config import settings
-from app.rag.retriever import search_chunks_positioned
 from app.schemas import ChatMessage
-from app.services.llm import get_chat_model_with_fallback
-
-TUTOR_PROMPT = """You are Tome Tutor, a concise technical teacher.
-Use only the context below to answer.
-If context is missing, say what is missing and ask for a clearer question.
-
-Context:
-{context}
-"""
 
 
-def _sse_event(event: str, payload: str | list[dict]) -> str:
+def _sse_event(event: str, payload: str | list[dict] | dict) -> str:
     encoded = json.dumps(payload)
     lines = encoded.splitlines() or [encoded]
     data_lines = "".join(f"data: {line}\n" for line in lines)
@@ -88,59 +78,3 @@ def _format_sources(chunks: list[dict], current_page: int | None = None) -> list
 
 def build_context(chunks: list[dict]) -> str:
     return "\n\n".join([chunk["content"] for chunk in chunks])
-
-
-async def stream_tutor_answer(
-    book_id: str,
-    message: str,
-    history: list[ChatMessage],
-    current_page: int | None = None,
-) -> AsyncIterator[str]:
-    chunks, _ = search_chunks_positioned(book_id=book_id, query=message, k=settings.top_k_chunks, current_page=current_page)
-    context = build_context(chunks)
-    sources = _format_sources(chunks, current_page=current_page)
-
-    llm = get_chat_model_with_fallback()
-    prompt_messages = [
-        SystemMessage(content=TUTOR_PROMPT.format(context=context)),
-        *_history_to_messages(history),
-        HumanMessage(content=message),
-    ]
-
-    yield _sse_event("agent", "explain")
-
-    async for chunk in llm.astream(prompt_messages):
-        token = chunk.content
-        if token:
-            yield _sse_event("token", token)
-
-    yield _sse_event("sources", sources)
-    yield _sse_event("done", "")
-
-
-async def stream_prompted_answer(
-    *,
-    system_prompt: str,
-    context: str,
-    message: str,
-    history: list[ChatMessage],
-    sources: list[dict],
-    agent_type: str | None = None,
-) -> AsyncIterator[str]:
-    llm = get_chat_model_with_fallback()
-    prompt_messages = [
-        SystemMessage(content=system_prompt.format(context=context)),
-        *_history_to_messages(history),
-        HumanMessage(content=message),
-    ]
-
-    if agent_type:
-        yield _sse_event("agent", agent_type)
-
-    async for chunk in llm.astream(prompt_messages):
-        token = chunk.content
-        if token:
-            yield _sse_event("token", token)
-
-    yield _sse_event("sources", sources)
-    yield _sse_event("done", "")

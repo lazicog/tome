@@ -93,5 +93,13 @@ class NoteResponse(BaseModel):
     updated_at: str
 
 
+class SuggestTitleRequest(BaseModel):
+    content: str
+
+
+class SuggestTitleResponse(BaseModel):
+    title: str
+
+
 class ErrorResponse(BaseModel):
     detail: str

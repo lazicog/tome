@@ -168,3 +168,16 @@ export async function deleteNote(noteId: string): Promise<void> {
     throw new Error(await res.text());
   }
 }
+
+export async function suggestNoteTitle(content: string): Promise<string> {
+  const res = await fetch(`${API}/notes/suggest-title`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const data = (await res.json()) as { title: string };
+  return data.title;
+}

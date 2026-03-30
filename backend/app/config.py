@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     query_rewrite_enabled: bool = True
     phase2_routing_enabled: bool = True
     use_sqlite_storage: bool = True
+    web_search_enabled: bool = False
+    tavily_api_key: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

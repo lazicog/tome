@@ -1,62 +1,142 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* ── Tome design tokens (Linear-inspired) ── */
 @theme {
-  --color-bg: #0b1120;
-  --color-bg-card: #111827;
-  --color-bg-hover: #1e293b;
-  --color-bg-input: #1e293b;
-  --color-border: #334155;
-  --color-border-accent: #3b82f6;
-  --color-text: #e2e8f0;
-  --color-text-muted: #94a3b8;
-  --color-text-heading: #f1f5f9;
-  --color-accent: #3b82f6;
-  --color-accent-hover: #2563eb;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  --color-bg: #0E0E0E;
+  --color-surface: #151515;
+  --color-surface-hover: #1C1C1C;
+  --color-border: #242424;
+  --color-border-strong: #303030;
+  --color-text: #F0F0F0;
+  --color-text-muted: #737373;
+  --color-text-subtle: #404040;
+  --color-accent: #6366F1;
+  --color-accent-hover: #4F46E5;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
 }
 
-/* Markdown prose overrides for dark theme */
+/* ── shadcn variable mappings ── */
+@theme inline {
+  --font-heading: var(--font-inter);
+  --font-sans: var(--font-inter);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* shadcn dark theme — tuned to Linear palette */
+:root {
+  --background: #0E0E0E;
+  --foreground: #F0F0F0;
+  --card: #151515;
+  --card-foreground: #F0F0F0;
+  --popover: #1C1C1C;
+  --popover-foreground: #F0F0F0;
+  --primary: #6366F1;
+  --primary-foreground: #F0F0F0;
+  --secondary: #1C1C1C;
+  --secondary-foreground: #F0F0F0;
+  --muted: #1C1C1C;
+  --muted-foreground: #737373;
+  --accent: #1C1C1C;
+  --accent-foreground: #F0F0F0;
+  --destructive: #EF4444;
+  --border: #242424;
+  --input: #1C1C1C;
+  --ring: #6366F1;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #0E0E0E;
+  --foreground: #F0F0F0;
+  --card: #151515;
+  --card-foreground: #F0F0F0;
+  --popover: #1C1C1C;
+  --popover-foreground: #F0F0F0;
+  --primary: #6366F1;
+  --primary-foreground: #F0F0F0;
+  --secondary: #1C1C1C;
+  --secondary-foreground: #F0F0F0;
+  --muted: #1C1C1C;
+  --muted-foreground: #737373;
+  --accent: #1C1C1C;
+  --accent-foreground: #F0F0F0;
+  --destructive: #EF4444;
+  --border: #242424;
+  --input: #1C1C1C;
+  --ring: #6366F1;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ── Markdown prose (chat messages) ── */
 .prose-chat {
-  color: var(--color-text);
+  color: #F0F0F0;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .prose-chat h1, .prose-chat h2, .prose-chat h3, .prose-chat h4 {
-  color: var(--color-text-heading);
+  color: #F0F0F0;
   font-weight: 600;
   margin-top: 0.75em;
   margin-bottom: 0.25em;
 }
-.prose-chat h1 { font-size: 1.15em; }
-.prose-chat h2 { font-size: 1.05em; }
-.prose-chat h3, .prose-chat h4 { font-size: 1em; }
-.prose-chat p {
-  margin: 0.35em 0;
-  line-height: 1.6;
-}
-.prose-chat strong {
-  color: var(--color-text-heading);
-  font-weight: 600;
-}
-.prose-chat ul, .prose-chat ol {
-  margin: 0.35em 0;
-  padding-left: 1.25em;
-}
-.prose-chat li {
-  margin: 0.15em 0;
-  line-height: 1.55;
-}
+.prose-chat h1 { font-size: 1.1em; }
+.prose-chat h2 { font-size: 1.0em; }
+.prose-chat h3, .prose-chat h4 { font-size: 0.95em; }
+.prose-chat p { margin: 0.35em 0; }
+.prose-chat strong { color: #F0F0F0; font-weight: 600; }
+.prose-chat ul, .prose-chat ol { margin: 0.35em 0; padding-left: 1.25em; }
+.prose-chat li { margin: 0.12em 0; }
 .prose-chat code {
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
   padding: 0.15em 0.35em;
   border-radius: 0.25em;
-  font-size: 0.88em;
-  font-family: "Fira Code", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.86em;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 .prose-chat pre {
-  background: #0d1117;
-  border: 1px solid var(--color-border);
+  background: #0A0A0A;
+  border: 1px solid #242424;
   border-radius: 0.5em;
   padding: 0.75em 1em;
   margin: 0.5em 0;
@@ -64,73 +144,53 @@
 }
 .prose-chat pre code {
   background: none;
-  color: #e2e8f0;
+  color: #E0E0E0;
   padding: 0;
-  font-size: 0.85em;
-  line-height: 1.5;
+  font-size: 0.84em;
+  line-height: 1.55;
 }
 .prose-chat blockquote {
-  border-left: 3px solid var(--color-accent);
+  border-left: 2px solid #6366F1;
   padding-left: 0.75em;
   margin: 0.5em 0;
-  color: var(--color-text-muted);
+  color: #737373;
   font-style: italic;
 }
-.prose-chat table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0.5em 0;
-  font-size: 0.88em;
-}
-.prose-chat th, .prose-chat td {
-  border: 1px solid var(--color-border);
-  padding: 0.35em 0.6em;
-  text-align: left;
-}
-.prose-chat th {
-  background: rgba(59, 130, 246, 0.08);
-  color: var(--color-text-heading);
-  font-weight: 600;
-}
-.prose-chat a {
-  color: var(--color-accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.prose-chat hr {
-  border-color: var(--color-border);
-  margin: 0.75em 0;
-}
+.prose-chat table { width: 100%; border-collapse: collapse; margin: 0.5em 0; font-size: 0.88em; }
+.prose-chat th, .prose-chat td { border: 1px solid #242424; padding: 0.35em 0.6em; text-align: left; }
+.prose-chat th { background: rgba(99, 102, 241, 0.08); color: #F0F0F0; font-weight: 600; }
+.prose-chat a { color: #6366F1; text-decoration: underline; text-underline-offset: 2px; }
+.prose-chat hr { border-color: #242424; margin: 0.75em 0; }
 
-/* Typing indicator */
+/* ── Typing indicator ── */
 @keyframes typing-dot {
   0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-3px); }
 }
-.typing-dot {
-  animation: typing-dot 1.4s ease-in-out infinite;
-}
+.typing-dot { animation: typing-dot 1.4s ease-in-out infinite; }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* Toast animation */
+/* ── Toast ── */
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes toast-out {
   from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 0; transform: translateY(12px); }
 }
-.toast-enter, .animate-toast-in { animation: toast-in 0.25s ease-out; }
-.toast-exit { animation: toast-out 0.25s ease-in forwards; }
+.toast-enter, .animate-toast-in { animation: toast-in 0.2s ease-out; }
+.toast-exit { animation: toast-out 0.2s ease-in forwards; }
 
-/* Resizable handle */
-.resize-handle {
-  cursor: col-resize;
-  user-select: none;
-  touch-action: none;
+/* ── Notes drawer slide-over ── */
+@keyframes drawer-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
-.resize-handle:hover, .resize-handle:active {
-  background: var(--color-accent);
+@keyframes drawer-out {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
 }
+.drawer-open  { animation: drawer-in  0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+.drawer-close { animation: drawer-out 0.18s ease-in forwards; }

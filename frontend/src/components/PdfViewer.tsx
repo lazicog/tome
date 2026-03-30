@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/esm/Page/TextLayer.css";
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, AlertCircle } from "lucide-react";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface PdfViewerProps {
   url: string;
@@ -10,81 +15,245 @@ interface PdfViewerProps {
 }
 
 export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProps) {
+  const [numPages, setNumPages] = useState(0);
   const [pageNum, setPageNum] = useState(1);
   const [inputVal, setInputVal] = useState("1");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const prevSrc = useRef("");
+  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [containerWidth, setContainerWidth] = useState(0);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const prevGoToPage = useRef<number | undefined>(undefined);
+  const pageNumRef = useRef(1);
+  const numPagesRef = useRef(0);
+
+  /* Fit-to-width via ResizeObserver */
   useEffect(() => {
-    if (goToPage && goToPage >= 1 && goToPage !== pageNum) {
-      setPageNum(goToPage);
-      setInputVal(String(goToPage));
-    }
-  }, [goToPage]);
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver((entries) => {
+      setContainerWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
-  const iframeSrc = `${url}?p=${pageNum}#page=${pageNum}&toolbar=0&navpanes=0`;
+  const pageWidth = containerWidth > 0 ? (containerWidth - 32) * zoomLevel : undefined;
 
+  /* Scroll to a page element — instant, no CSS smooth (avoids clashing with rAF loop) */
+  const scrollToPage = useCallback((n: number) => {
+    const el = pageRefs.current[n - 1];
+    const container = scrollRef.current;
+    if (!el || !container) return;
+    container.scrollTop = el.offsetTop - 16;
+  }, []);
+
+  /* IntersectionObserver — track which page is most visible */
   useEffect(() => {
-    if (!iframeRef.current || iframeSrc === prevSrc.current) return;
-    prevSrc.current = iframeSrc;
-    iframeRef.current.src = iframeSrc;
-  }, [iframeSrc]);
+    if (numPages === 0) return;
+    const ratios = new Map<number, number>();
 
-  const navigate = (p: number) => {
-    if (p >= 1) {
-      setPageNum(p);
-      setInputVal(String(p));
-      onPageChange?.(p);
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const page = parseInt(entry.target.getAttribute("data-page") ?? "1", 10);
+          ratios.set(page, entry.intersectionRatio);
+        }
+        let best = { page: 1, ratio: 0 };
+        ratios.forEach((ratio, page) => {
+          if (ratio > best.ratio) best = { page, ratio };
+        });
+        if (best.ratio > 0) {
+          pageNumRef.current = best.page;
+          setPageNum(best.page);
+          setInputVal(String(best.page));
+          onPageChange?.(best.page);
+        }
+      },
+      {
+        root: scrollRef.current,
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      },
+    );
+
+    pageRefs.current.forEach((ref) => ref && obs.observe(ref));
+    return () => obs.disconnect();
+  }, [numPages, onPageChange]);
+
+  /* goToPage prop */
+  useEffect(() => {
+    if (goToPage !== undefined && goToPage !== prevGoToPage.current) {
+      prevGoToPage.current = goToPage;
+      scrollToPage(goToPage);
     }
+  }, [goToPage, scrollToPage]);
+
+  /* Keyboard navigation — registered once, uses refs to avoid re-mounting */
+  useEffect(() => {
+    const keysHeld = new Set<string>();
+    let rafId: number | null = null;
+
+    const tick = () => {
+      const scroll = scrollRef.current;
+      if (scroll && (keysHeld.has("ArrowUp") || keysHeld.has("ArrowDown"))) {
+        scroll.scrollTop += keysHeld.has("ArrowDown") ? 20 : -20;
+        rafId = requestAnimationFrame(tick);
+      } else {
+        rafId = null;
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        keysHeld.add(e.key);
+        if (!rafId) rafId = requestAnimationFrame(tick);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scrollToPage(Math.max(1, pageNumRef.current - 1));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scrollToPage(Math.min(numPagesRef.current || 1, pageNumRef.current + 1));
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => keysHeld.delete(e.key);
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [scrollToPage]); // scrollToPage is stable (useCallback) — this runs once
+
+  const handleInputCommit = () => {
+    const n = parseInt(inputVal, 10);
+    const clamped = Math.max(1, Math.min(isNaN(n) ? pageNum : n, numPages || 1));
+    setInputVal(String(clamped));
+    scrollToPage(clamped);
   };
 
   return (
-    <div className="flex flex-col min-h-0 h-full">
-      <div className="flex items-center justify-center gap-3 py-2 border-b border-border bg-bg-card/50 shrink-0">
-        <button
-          onClick={() => navigate(pageNum - 1)}
-          disabled={pageNum <= 1}
-          className="p-1 rounded hover:bg-bg-hover disabled:opacity-30 transition-colors"
+    <div ref={containerRef} className="flex flex-col h-full" style={{ background: "#0E0E0E" }}>
+
+      {/* ── Scrollable pages ── */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
+        <Document
+          file={url}
+          onLoadSuccess={({ numPages }) => {
+            setNumPages(numPages);
+            numPagesRef.current = numPages;
+            pageRefs.current = new Array(numPages).fill(null);
+          }}
+          loading={
+            <div className="flex flex-col items-center justify-center mt-24 gap-3">
+              <Loader2 size={20} className="animate-spin" style={{ color: "#737373" }} />
+              <span className="text-xs" style={{ color: "#737373" }}>Loading PDF…</span>
+            </div>
+          }
+          error={
+            <div className="flex flex-col items-center justify-center mt-24 gap-2">
+              <AlertCircle size={18} style={{ color: "#EF4444" }} />
+              <span className="text-xs" style={{ color: "#737373" }}>Failed to load PDF</span>
+            </div>
+          }
         >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <span className="text-sm text-text-muted tabular-nums">
-          Page{" "}
-          <input
-            type="number"
-            min={1}
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onBlur={() => {
-              const p = parseInt(inputVal);
-              if (p >= 1) navigate(p);
-              else setInputVal(String(pageNum));
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const p = parseInt(inputVal);
-                if (p >= 1) navigate(p);
-                else setInputVal(String(pageNum));
-              }
-            }}
-            className="w-14 text-center bg-bg-input border border-border rounded px-1 py-0.5 text-sm text-text"
-          />
-        </span>
-        <button
-          onClick={() => navigate(pageNum + 1)}
-          className="p-1 rounded hover:bg-bg-hover transition-colors"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+          {Array.from({ length: numPages }, (_, i) => (
+            <div
+              key={i + 1}
+              ref={(el) => { pageRefs.current[i] = el; }}
+              data-page={i + 1}
+              className="flex justify-center mb-3"
+            >
+              <Page
+                pageNumber={i + 1}
+                width={pageWidth}
+                renderTextLayer
+                renderAnnotationLayer
+              />
+            </div>
+          ))}
+        </Document>
       </div>
 
-      <div className="flex-1 relative">
-        <iframe
-          ref={iframeRef}
-          src={`${url}?p=1#page=1&toolbar=0&navpanes=0`}
-          className="w-full h-full border-0"
-          title="PDF Viewer"
-        />
+      {/* ── Bottom toolbar ── */}
+      <div
+        className="flex items-center justify-center gap-3 h-10 px-4 flex-shrink-0 border-t"
+        style={{ background: "#0E0E0E", borderColor: "#242424" }}
+      >
+        {/* Prev */}
+        <button
+          onClick={() => scrollToPage(Math.max(1, pageNum - 1))}
+          disabled={pageNum <= 1}
+          className="p-1 rounded transition-colors disabled:opacity-30"
+          style={{ color: "#737373" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+        >
+          <ChevronLeft size={14} />
+        </button>
+
+        {/* Page input / total */}
+        <div className="flex items-center gap-1.5">
+          <input
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleInputCommit(); }}
+            onBlur={handleInputCommit}
+            className="w-10 h-6 text-center rounded border text-xs outline-none transition-colors"
+            style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+          />
+          <span className="text-xs" style={{ color: "#737373" }}>/ {numPages || "—"}</span>
+        </div>
+
+        {/* Next */}
+        <button
+          onClick={() => scrollToPage(Math.min(numPages || 1, pageNum + 1))}
+          disabled={pageNum >= numPages}
+          className="p-1 rounded transition-colors disabled:opacity-30"
+          style={{ color: "#737373" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+        >
+          <ChevronRight size={14} />
+        </button>
+
+        {/* Divider */}
+        <div className="w-px h-4 mx-1" style={{ background: "#242424" }} />
+
+        {/* Zoom out */}
+        <button
+          onClick={() => setZoomLevel((z) => Math.max(0.5, +(z - 0.15).toFixed(2)))}
+          className="p-1 rounded transition-colors"
+          style={{ color: "#737373" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+          title="Zoom out"
+        >
+          <ZoomOut size={13} />
+        </button>
+
+        <span className="text-xs w-9 text-center select-none" style={{ color: "#737373" }}>
+          {Math.round(zoomLevel * 100)}%
+        </span>
+
+        {/* Zoom in */}
+        <button
+          onClick={() => setZoomLevel((z) => Math.min(3.0, +(z + 0.15).toFixed(2)))}
+          className="p-1 rounded transition-colors"
+          style={{ color: "#737373" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#F0F0F0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#737373")}
+          title="Zoom in"
+        >
+          <ZoomIn size={13} />
+        </button>
       </div>
     </div>
   );

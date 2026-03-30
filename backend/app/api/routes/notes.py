@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
-from app.schemas import NoteCreate, NoteResponse, NoteUpdate
+from app.schemas import NoteCreate, NoteResponse, NoteUpdate, SuggestTitleRequest, SuggestTitleResponse
 from app.services.notes import create_note, delete_note, get_note, list_notes, update_note
 
 router = APIRouter(tags=["notes"])
@@ -99,6 +99,36 @@ async def delete_note_endpoint(note_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Note not found")
     return None
+
+
+@router.post(
+    "/notes/suggest-title",
+    response_model=SuggestTitleResponse,
+    summary="Suggest a concise title for note content using the LLM",
+)
+async def suggest_title_endpoint(payload: SuggestTitleRequest) -> SuggestTitleResponse:
+    from app.services.llm import get_chat_model_with_fallback
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    # Truncate content to avoid blowing through tokens
+    content_preview = payload.content[:2000]
+
+    llm = get_chat_model_with_fallback()
+    messages = [
+        SystemMessage(
+            content=(
+                "You are a note-titling assistant. Generate a concise, meaningful title "
+                "(5–8 words) that captures the key insight of the note. "
+                "Return ONLY the title — no punctuation at the end, no quotes, nothing else."
+            )
+        ),
+        HumanMessage(content=content_preview),
+    ]
+    result = await llm.ainvoke(messages)
+    title = str(result.content).strip().strip('"').strip("'")
+    # Truncate to 80 chars just in case
+    title = title[:80]
+    return SuggestTitleResponse(title=title)
 
 
 @router.post(

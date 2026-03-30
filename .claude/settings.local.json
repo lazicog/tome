@@ -6,7 +6,13 @@
       "Bash(grep -n \"note_saved\\\\|note_aware\" tests/*.py)",
       "Bash(curl -s http://127.0.0.1:8000/api/health)",
       "Bash(curl:*)",
-      "Bash(.venv/Scripts/python -m pytest -q)"
-    ]
+      "Bash(.venv/Scripts/python -m pytest -q)",
+      "Bash(npx shadcn@latest init --yes -d)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(.venv/Scripts/python -m pytest tests/test_router.py tests/test_chat_stream_integration.py tests/test_session_chat_integration.py -x -q)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

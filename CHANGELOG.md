@@ -7,6 +7,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Single orchestrator agent** (see `docs/devlog/2026-03-30-orchestrator-pdf-viewer.md`):
+  - Replaced 5-agent LangGraph routing system with a single tool-calling orchestrator
+  - Tools: `search_book`, `get_page_text`, `save_note`, `generate_quiz`, `web_search` (opt-in via `WEB_SEARCH_ENABLED`)
+  - Current page text injected verbatim into system prompt — agent knows exactly what the user is reading
+  - `thinking` SSE event emitted during each tool call ("Searching book…", "Reading page…", "Saving note…")
+  - `web_sources` SSE event for web search results (Tavily → DuckDuckGo fallback)
+  - `backend/app/rag/page_extractor.py` — pdfplumber verbatim page text extraction
+  - `backend/app/agents/tools.py` — 5 LangChain `@tool` functions with shared closure state
+  - `backend/app/agents/orchestrator.py` — streaming agentic loop with `astream_events`
+  - Deleted: `router.py`, `example_gen.py`, `context_enricher.py`, `quiz_master.py`, `summarizer.py`
+  - Config: `web_search_enabled` (default `false`), `tavily_api_key`
+- **react-pdf PDF viewer** — replaced browser iframe with canvas renderer:
+  - Continuous scroll (all pages rendered), IntersectionObserver page tracking, fit-to-width zoom
+  - Smooth keyboard scroll (rAF loop, ArrowUp/Down 20px/frame), instant page jumps (ArrowLeft/Right)
+  - Bottom toolbar: prev/next, page number input, zoom controls; text selection enabled
+  - `/` keyboard shortcut focuses chat input from anywhere on the page
+- **LLM-suggested note titles** — "Save as note" opens dialog with AI-generated title (editable before saving)
+- **Phoenix observability spec** written at `docs/specs/2026-03-30-phoenix-eval-pipeline.md` — implementation in progress
+
+### Changed
+- `graph.py` reduced to thin wrapper (6 lines) delegating to orchestrator
+- `tutor.py` now utility-only (`_sse_event`, `_format_sources`, `build_context`, `_history_to_messages`)
+- `chat.py` simplified — removed `_note_aware_stream` and `phase2_routing_enabled` fallback path
+- Frontend: removed agent label from message bubbles; added `thinking` label + web sources UI
+
+### Notes, RAG v2, and agent upgrade
 - **Notes, RAG v2, and agent upgrade** (see `docs/devlog/2026-03-29-notes-rag-agent-upgrade.md`):
   - LLM intent router with keyword fallback; new `summarize` intent and Summarizer agent
   - LangGraph flow: `router → query_rewrite → retrieve → agent prep` (config: `query_rewrite_enabled`, `reranker_enabled`, `reranker_model`)

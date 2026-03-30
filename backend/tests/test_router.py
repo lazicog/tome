@@ -1,80 +1,57 @@
-import pytest
-
-from app.agents.graph import route_intent
-from app.agents.router import classify_intent, _classify_intent_keyword, VALID_INTENTS
-from app.schemas import ChatMessage
+"""Tests for the orchestrator tools module."""
 
 
-def test_classify_intent_example() -> None:
-    intent = _classify_intent_keyword("Can you show me a code example for embeddings?")
-    assert intent == "example"
+def test_thinking_labels_defined() -> None:
+    from app.agents.tools import THINKING_LABELS
+    assert "search_book" in THINKING_LABELS
+    assert "get_page_text" in THINKING_LABELS
+    assert "save_note" in THINKING_LABELS
+    assert "generate_quiz" in THINKING_LABELS
+    assert "web_search" in THINKING_LABELS
 
 
-def test_classify_intent_context() -> None:
-    intent = _classify_intent_keyword("I am unfamiliar with vector databases, give me background")
-    assert intent == "context"
+def test_thinking_label_known() -> None:
+    from app.agents.tools import thinking_label
+    assert thinking_label("search_book") == "Searching book…"
+    assert thinking_label("get_page_text") == "Reading page…"
+    assert thinking_label("save_note") == "Saving note…"
+    assert thinking_label("generate_quiz") == "Building quiz…"
+    assert thinking_label("web_search") == "Searching web…"
 
 
-def test_classify_intent_default_explain() -> None:
-    intent = _classify_intent_keyword("Explain retrieval ranking tradeoffs")
-    assert intent == "explain"
+def test_thinking_label_unknown() -> None:
+    from app.agents.tools import thinking_label
+    result = thinking_label("mystery_tool")
+    assert "mystery_tool" in result
 
 
-def test_classify_intent_summarize() -> None:
-    intent = _classify_intent_keyword("Summarize the key concepts from this chapter")
-    assert intent == "summarize"
+def test_build_tools_returns_base_four(monkeypatch) -> None:
+    """build_tools returns 4 tools when web_search is disabled."""
+    import app.agents.tools as tools_module
+    monkeypatch.setattr(tools_module.settings, "web_search_enabled", False)
+
+    tools = tools_module.build_tools(
+        book_id="book-1",
+        current_page=3,
+        retrieved_chunks=[],
+        pending_notes=[],
+        web_sources=[],
+    )
+    names = {t.name for t in tools}
+    assert names == {"search_book", "get_page_text", "save_note", "generate_quiz"}
 
 
-def test_classify_intent_study_notes() -> None:
-    intent = _classify_intent_keyword("Take notes on the main ideas")
-    assert intent == "summarize"
+def test_build_tools_adds_web_search_when_enabled(monkeypatch) -> None:
+    import app.agents.tools as tools_module
+    monkeypatch.setattr(tools_module.settings, "web_search_enabled", True)
 
-
-def test_classify_intent_key_takeaways() -> None:
-    intent = _classify_intent_keyword("What are the key takeaways?")
-    assert intent == "summarize"
-
-
-@pytest.mark.parametrize(
-    ("query", "expected"),
-    [
-        ("Give me a simple example of retrieval augmentation.", "example"),
-        ("Can you show me a code snippet for this?", "example"),
-        ("I need background before I learn this topic.", "context"),
-        ("What are the prerequisites for this concept?", "context"),
-        ("Explain semantic chunking tradeoffs.", "explain"),
-        ("Quiz me on this chapter.", "quiz"),
-        ("Test my understanding of embeddings.", "quiz"),
-        ("Give me some practice questions.", "quiz"),
-        ("Can you assess what I know about RAG?", "quiz"),
-        ("Summarize the chapter on agents.", "summarize"),
-        ("Give me a recap of this section.", "summarize"),
-        ("What are the key points?", "summarize"),
-    ],
-)
-def test_classify_intent_phrase_matrix(query: str, expected: str) -> None:
-    intent = _classify_intent_keyword(query)
-    assert intent == expected
-
-
-def test_classify_intent_quiz() -> None:
-    intent = _classify_intent_keyword("Quiz me on retrieval augmented generation.")
-    assert intent == "quiz"
-
-
-def test_backward_compat_classify_intent() -> None:
-    """classify_intent (sync) still works for backward compat."""
-    intent = classify_intent("Explain this concept", [])
-    assert intent == "explain"
-
-
-def test_route_intent_fallbacks() -> None:
-    assert route_intent({"agent_type": "example"}) == "example_prep"
-    assert route_intent({"agent_type": "context"}) == "context_prep"
-    assert route_intent({"agent_type": "quiz"}) == "quiz_prep"
-    assert route_intent({"agent_type": "summarize"}) == "summarize_prep"
-    assert route_intent({"agent_type": "unknown"}) == "tutor_prep"
-
-
-def test_valid_intents_complete() -> None:
-    assert VALID_INTENTS == {"explain", "example", "context", "quiz", "summarize"}
+    tools = tools_module.build_tools(
+        book_id="book-1",
+        current_page=None,
+        retrieved_chunks=[],
+        pending_notes=[],
+        web_sources=[],
+    )
+    names = {t.name for t in tools}
+    assert "web_search" in names
+    assert len(names) == 5
