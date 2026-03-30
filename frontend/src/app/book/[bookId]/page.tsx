@@ -532,8 +532,9 @@ export default function BookPage() {
       <div className="flex flex-1 min-h-0">
 
         {/* PDF panel — 62% (or 100% when chat hidden) */}
+        {/* PDF panel — chat-aware width, toggle button floats on right edge */}
         <div
-          className="flex-shrink-0 min-h-0 flex transition-all duration-300 ease-in-out"
+          className="relative flex-shrink-0 min-h-0 flex transition-all duration-300 ease-in-out"
           style={{ width: chatOpen ? "62%" : "100%" }}
         >
           {/* Left reading-progress rail */}
@@ -570,19 +571,20 @@ export default function BookPage() {
               onNumPagesChange={setNumPages}
             />
           </div>
-        </div>
 
-        {/* Divider + chat toggle button */}
-        <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: "1px", background: "#242424" }}>
+          {/* Chat toggle — floats on the right edge, always visible */}
           <button
             onClick={() => setChatOpen((v) => !v)}
-            className="absolute z-10 flex items-center justify-center w-5 h-10 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 flex items-center justify-center w-5 h-10 rounded-md transition-colors text-[#404040] hover:text-[#F0F0F0] hover:bg-[#1C1C1C]"
             style={{ background: "#0E0E0E", border: "1px solid #242424" }}
             title={chatOpen ? "Hide chat" : "Show chat"}
           >
             {chatOpen ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
           </button>
         </div>
+
+        {/* Divider — only when chat is visible (avoids 100% + 1px overflow) */}
+        {chatOpen && <div className="w-px flex-shrink-0" style={{ background: "#242424" }} />}
 
         {/* Chat panel */}
         <div className={`flex flex-col min-h-0 transition-all duration-300 ease-in-out overflow-hidden ${chatOpen ? "flex-1 min-w-0" : "w-0 flex-shrink-0"}`}>
