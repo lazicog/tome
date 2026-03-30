@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -68,7 +68,7 @@ function formatSessionLabel(s: Session): string {
   return `${date} · ${s.message_count} msgs`;
 }
 
-function TypingIndicator() {
+const TypingIndicator = memo(function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 py-1">
       <span className="typing-dot w-1.5 h-1.5 rounded-full bg-indigo-400" />
@@ -76,7 +76,7 @@ function TypingIndicator() {
       <span className="typing-dot w-1.5 h-1.5 rounded-full bg-indigo-400" />
     </div>
   );
-}
+});
 
 const SUGGESTIONS = [
   "Explain the main concepts",
@@ -184,6 +184,71 @@ function SaveNoteDialog({
     </div>
   );
 }
+
+interface MessageBubbleProps {
+  role: "user" | "assistant";
+  content: string;
+  isLast: boolean;
+  thinkingLabel: string;
+  waitingForFirst: boolean;
+  sending: boolean;
+  onSaveAsNote: (content: string) => void;
+}
+
+const MessageBubble = memo(function MessageBubble({
+  role,
+  content,
+  isLast,
+  thinkingLabel,
+  waitingForFirst,
+  sending,
+  onSaveAsNote,
+}: MessageBubbleProps) {
+  return (
+    <div className={cn("flex", role === "user" ? "justify-end" : "justify-start")}>
+      <div
+        className={cn("max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm min-w-0")}
+        style={
+          role === "user"
+            ? { background: "#6366F1", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
+            : { background: "#151515", border: "1px solid #242424", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
+        }
+      >
+        {role === "assistant" ? (
+          <>
+            {content ? (
+              <div className="prose-chat max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              </div>
+            ) : isLast && waitingForFirst ? (
+              <div className="flex flex-col gap-1">
+                <TypingIndicator />
+                {thinkingLabel && (
+                  <span className="text-[10px]" style={{ color: "#737373" }}>{thinkingLabel}</span>
+                )}
+              </div>
+            ) : (
+              <span style={{ color: "#737373" }}>…</span>
+            )}
+            {content && !sending && (
+              <button
+                onClick={() => onSaveAsNote(content)}
+                className="mt-2 flex items-center gap-1 text-[10px] transition-colors"
+                style={{ color: "#404040" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#6366F1")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#404040")}
+              >
+                <Bookmark size={11} /> Save as note
+              </button>
+            )}
+          </>
+        ) : (
+          <span>{content}</span>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export default function BookPage() {
   const params = useParams<{ bookId: string }>();
@@ -392,7 +457,7 @@ export default function BookPage() {
     }
   };
 
-  const saveAsNote = async (content: string) => {
+  const saveAsNote = useCallback(async (content: string) => {
     setPendingNoteContent(content);
     setSuggestedTitle("");
     setFetchingTitle(true);
@@ -404,7 +469,7 @@ export default function BookPage() {
     } finally {
       setFetchingTitle(false);
     }
-  };
+  }, [currentPage]);
 
   const confirmSaveNote = async (title: string) => {
     if (!pendingNoteContent) return;
@@ -564,51 +629,21 @@ export default function BookPage() {
                 </div>
               </div>
             ) : (
-              messages.map((m, i) => (
-                <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-                  {/* Fix 6: overflowWrap + wordBreak on bubble */}
-                  <div
-                    className={cn("max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm min-w-0")}
-                    style={
-                      m.role === "user"
-                        ? { background: "#6366F1", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
-                        : { background: "#151515", border: "1px solid #242424", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
-                    }
-                  >
-                    {m.role === "assistant" ? (
-                      <>
-                        {m.content ? (
-                          <div className="prose-chat max-w-none">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                          </div>
-                        ) : waitingForFirst ? (
-                          <div className="flex flex-col gap-1">
-                            <TypingIndicator />
-                            {thinkingLabel && (
-                              <span className="text-[10px]" style={{ color: "#737373" }}>{thinkingLabel}</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ color: "#737373" }}>…</span>
-                        )}
-                        {m.content && !sending && (
-                          <button
-                            onClick={() => void saveAsNote(m.content)}
-                            className="mt-2 flex items-center gap-1 text-[10px] transition-colors"
-                            style={{ color: "#404040" }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = "#6366F1")}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = "#404040")}
-                          >
-                            <Bookmark size={11} /> Save as note
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <span>{m.content}</span>
-                    )}
-                  </div>
-                </div>
-              ))
+              messages.map((m, i) => {
+                const last = i === messages.length - 1;
+                return (
+                  <MessageBubble
+                    key={i}
+                    role={m.role}
+                    content={m.content}
+                    isLast={last}
+                    thinkingLabel={last ? thinkingLabel : ""}
+                    waitingForFirst={last ? waitingForFirst : false}
+                    sending={last ? sending : false}
+                    onSaveAsNote={saveAsNote}
+                  />
+                );
+              })
             )}
             <div ref={messagesEndRef} />
           </div>
