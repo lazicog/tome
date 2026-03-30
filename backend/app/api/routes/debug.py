@@ -9,7 +9,7 @@ router = APIRouter(prefix="/debug", tags=["debug"])
 async def debug_retrieve(
     book_id: str = Query(..., description="Book ID to search"),
     query: str = Query(..., description="Search query"),
-    k: int = Query(default=8, description="Number of chunks to return"),
+    k: int = Query(default=8, ge=1, le=100, description="Number of chunks to return"),
 ) -> dict:
     chunks = search_chunks(book_id=book_id, query=query, k=k)
     return {

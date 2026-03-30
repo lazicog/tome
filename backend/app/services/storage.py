@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import aiofiles
@@ -53,7 +53,7 @@ async def create_book(file_name: str) -> tuple[BookResponse, Path]:
         "file_name": file_name,
         "status": ProcessingStatus.queued.value,
         "chunks": 0,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
     books[book_id] = payload
     await save_books(books)

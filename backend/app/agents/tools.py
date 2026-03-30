@@ -4,9 +4,21 @@ Each tool is created via build_tools() which binds book_id, current_page,
 and shared mutable state lists via closure.
 """
 
+import structlog
 from langchain_core.tools import tool
 
 from app.agents.tutor import build_context
+
+log = structlog.get_logger()
+
+
+def _add_unique_chunks(retrieved_chunks: list, new_chunks: list) -> None:
+    """Append chunks from new_chunks that aren't already in retrieved_chunks."""
+    existing_ids = {c["id"] for c in retrieved_chunks}
+    for c in new_chunks:
+        if c["id"] not in existing_ids:
+            retrieved_chunks.append(c)
+            existing_ids.add(c["id"])
 from app.config import settings
 from app.rag.retriever import search_chunks_positioned
 from app.services.llm import get_chat_model_with_fallback
@@ -59,12 +71,7 @@ def build_tools(
             k=settings.top_k_chunks,
             current_page=page,
         )
-        # Deduplicate against already-retrieved chunks
-        existing_ids = {c["id"] for c in retrieved_chunks}
-        for c in chunks:
-            if c["id"] not in existing_ids:
-                retrieved_chunks.append(c)
-                existing_ids.add(c["id"])
+        _add_unique_chunks(retrieved_chunks, chunks)
 
         if not chunks:
             return "No relevant content found for that query."
@@ -118,11 +125,7 @@ def build_tools(
         if not chunks:
             return "Not enough book content found to generate a quiz on that topic."
 
-        existing_ids = {c["id"] for c in retrieved_chunks}
-        for c in chunks:
-            if c["id"] not in existing_ids:
-                retrieved_chunks.append(c)
-                existing_ids.add(c["id"])
+        _add_unique_chunks(retrieved_chunks, chunks)
 
         context = build_context(chunks)
         llm = get_chat_model_with_fallback()
@@ -171,8 +174,8 @@ async def _do_web_search(query: str) -> list[dict]:
                 {"url": r.get("url", ""), "snippet": r.get("content", r.get("snippet", ""))}
                 for r in resp.get("results", [])
             ]
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("web_search.tavily_failed", error=str(exc))
 
     # Fallback: DuckDuckGo (sync wrapper run in thread)
     try:
@@ -181,5 +184,6 @@ async def _do_web_search(query: str) -> list[dict]:
         ddg = DuckDuckGoSearchRun()
         raw = await asyncio.to_thread(ddg.run, query)
         return [{"url": "", "snippet": raw[:1200]}]
-    except Exception:
+    except Exception as exc:
+        log.warning("web_search.duckduckgo_failed", error=str(exc))
         return []

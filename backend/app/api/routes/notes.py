@@ -139,10 +139,15 @@ async def generate_notes_endpoint(
     book_id: str,
     query: str = Query(..., description="Topic or chapter to generate notes for"),
 ) -> StreamingResponse:
-    from app.agents.tutor import _sse_event, _format_sources, build_context, _history_to_messages
+    from app.agents.tutor import _sse_event, _format_sources, build_context
     from app.rag.retriever import search_chunks
-    from app.agents.summarizer import SUMMARIZER_PROMPT
     from app.config import settings
+
+    SUMMARIZER_PROMPT = (
+        "You are a study notes generator. Based on the retrieved book content below, "
+        "create structured study notes with clear headings, key points, and examples.\n\n"
+        "Context:\n{context}"
+    )
     from app.services.llm import get_chat_model_with_fallback
     from app.services.notes import create_note as _create_note
     from langchain_core.messages import HumanMessage, SystemMessage

@@ -1,26 +1,12 @@
 import pytest
 import pytest_asyncio
 
-import app.services.database as db_mod
 from app.services.notes import create_note, delete_note, get_note, list_notes, update_note
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def _isolated_db(tmp_path):
-    db_mod._data_dir_override = tmp_path
-    await db_mod.init_db()
-    async with db_mod.get_connection() as conn:
-        await conn.execute(
-            "INSERT INTO books (id, title, file_name, status, chunks, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            ("book1", "Test Book 1", "test1.pdf", "ready", 10, "2026-01-01T00:00:00Z"),
-        )
-        await conn.execute(
-            "INSERT INTO books (id, title, file_name, status, chunks, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            ("book2", "Test Book 2", "test2.pdf", "ready", 5, "2026-01-01T00:00:00Z"),
-        )
-        await conn.commit()
-    yield
-    db_mod._data_dir_override = None
+async def _db(isolated_db):
+    """Use the shared isolated_db fixture for all tests in this module."""
 
 
 @pytest.mark.asyncio
