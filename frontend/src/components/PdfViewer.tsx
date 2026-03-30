@@ -157,9 +157,12 @@ export default function PdfViewer({ url, goToPage, onPageChange }: PdfViewerProp
             </div>
           }
           error={
-            <div className="flex flex-col items-center justify-center mt-24 gap-2">
-              <AlertCircle size={18} style={{ color: "#EF4444" }} />
-              <span className="text-xs" style={{ color: "#737373" }}>Failed to load PDF</span>
+            <div className="flex flex-col items-center justify-center mt-24 gap-3">
+              <AlertCircle size={20} style={{ color: "#EF4444" }} />
+              <div className="text-center">
+                <p className="text-sm font-medium" style={{ color: "#F0F0F0" }}>Failed to load PDF</p>
+                <p className="text-xs mt-1" style={{ color: "#737373" }}>Try re-uploading the file or refreshing the page</p>
+              </div>
             </div>
           }
         >

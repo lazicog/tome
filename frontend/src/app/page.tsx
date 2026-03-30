@@ -22,7 +22,7 @@ function StatusDot({ status }: { status: Book["status"] }) {
   };
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`inline-block w-1.5 h-1.5 rounded-full ${colors[status] ?? "bg-zinc-500"}`} />
+      <span className={`inline-block w-1.5 h-1.5 rounded-full transition-colors duration-500 ${colors[status] ?? "bg-zinc-500"}`} />
       <span className="text-xs text-[#737373]">{labels[status] ?? status}</span>
     </span>
   );

@@ -340,6 +340,13 @@ export default function BookPage() {
   /* Fix 4: collapse sources when a new message arrives */
   useEffect(() => { setSourcesExpanded(false); }, [sources]);
 
+  /* Auto-dismiss chat errors after 5 seconds */
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(t);
+  }, [error]);
+
   const resumeSession = async (session: Session) => {
     setActiveSessionId(session.id);
     setMessages([]);

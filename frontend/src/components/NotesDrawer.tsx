@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Plus, Search, Pencil, Trash2, Check, ChevronDown, Download } from "lucide-react";
+import { X, Plus, Search, Pencil, Trash2, Check, ChevronDown, Download, Loader2, StickyNote } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -81,7 +81,20 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState("");
   const viewModalRef = useRef<HTMLDivElement>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(() => { setClosing(false); onClose(); }, 180);
+  }, [onClose]);
 
   const load = useCallback(async () => {
     const params: { type?: string; search?: string } = {};
@@ -98,28 +111,41 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
 
   async function handleCreate() {
     if (!newContent.trim()) return;
-    await createNote(bookId, {
-      title: newTitle.trim() || `Note — page ${currentPage}`,
-      content: newContent.trim(),
-      page_number: currentPage,
-      type: "manual",
-    });
-    setCreating(false);
-    setNewTitle("");
-    setNewContent("");
-    load();
+    setSaving(true);
+    try {
+      await createNote(bookId, {
+        title: newTitle.trim() || `Note — page ${currentPage}`,
+        content: newContent.trim(),
+        page_number: currentPage,
+        type: "manual",
+      });
+      setCreating(false);
+      setNewTitle("");
+      setNewContent("");
+      showToast("Note saved");
+      void load();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSaveEdit(id: string) {
-    await updateNote(id, { title: editTitle, content: editContent });
-    setEditingId(null);
-    load();
+    setSaving(true);
+    try {
+      await updateNote(id, { title: editTitle, content: editContent });
+      setEditingId(null);
+      showToast("Note updated");
+      void load();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: string) {
     await deleteNote(id);
     setViewingNote(null);
-    load();
+    showToast("Note deleted");
+    void load();
   }
 
   function startEdit(note: Note) {
@@ -170,7 +196,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  if (!open) return null;
+  if (!open && !closing) return null;
 
   const filterLabels: Record<NoteType, string> = {
     all: "All types",
@@ -183,11 +209,11 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/30 transition-opacity" onClick={handleClose} />
 
       {/* Drawer */}
       <aside
-        className="drawer-open fixed top-0 right-0 z-50 h-full w-[400px] flex flex-col border-l"
+        className={`${closing ? "drawer-close" : "drawer-open"} fixed top-0 right-0 z-50 h-full w-[400px] flex flex-col border-l`}
         style={{ background: "#111111", borderColor: "#242424" }}
       >
         {/* Header */}
@@ -214,7 +240,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
               <Plus size={15} style={{ color: "#F0F0F0" }} />
             </button>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-1.5 rounded hover:bg-[#1C1C1C] transition-colors"
               title="Close"
             >
@@ -293,9 +319,11 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
               </button>
               <button
                 onClick={handleCreate}
-                className="px-3 h-7 rounded-md text-xs font-medium transition-colors"
+                disabled={saving}
+                className="px-3 h-7 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 style={{ background: "#6366F1", color: "#F0F0F0" }}
               >
+                {saving && <Loader2 size={11} className="animate-spin" />}
                 Save note
               </button>
             </div>
@@ -305,9 +333,10 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
         {/* Notes list */}
         <div className="flex-1 overflow-y-auto">
           {notes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-2 px-4">
+            <div className="flex flex-col items-center justify-center h-full gap-3 px-4">
+              {!search && <StickyNote size={22} style={{ color: "#404040" }} />}
               <p className="text-xs text-center" style={{ color: "#737373" }}>
-                {search ? "No notes match your search." : "No notes yet. Create one or ask a question to auto-save insights."}
+                {search ? "No notes match your search." : "No notes yet.\nCreate one or ask a question to auto-save insights."}
               </p>
             </div>
           ) : (
@@ -339,11 +368,12 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
                           Cancel
                         </button>
                         <button
-                          onClick={() => handleSaveEdit(note.id)}
-                          className="p-1 rounded text-green-400"
+                          onClick={() => void handleSaveEdit(note.id)}
+                          disabled={saving}
+                          className="p-1 rounded text-green-400 disabled:opacity-50"
                           title="Save"
                         >
-                          <Check size={13} />
+                          {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                         </button>
                       </div>
                     </div>
@@ -387,6 +417,18 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
           )}
         </div>
       </aside>
+
+      {/* Drawer toast */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-[70] animate-toast-in">
+          <div
+            className="px-3 py-2 rounded-lg text-xs shadow-xl border"
+            style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
+          >
+            {toast}
+          </div>
+        </div>
+      )}
 
       {/* Full-view note modal */}
       {viewingNote && (
