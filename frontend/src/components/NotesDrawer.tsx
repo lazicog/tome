@@ -22,7 +22,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  manual: "#16A34A",
+  manual: "#6B9B6B",
   ai_summary: "#22C55E",
   highlight: "#F59E0B",
   agent_insight: "#8B5CF6",
@@ -33,8 +33,8 @@ function NoteBadge({ type }: { type: string }) {
     <span
       className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium"
       style={{
-        background: `${TYPE_COLORS[type] ?? "#16A34A"}18`,
-        color: TYPE_COLORS[type] ?? "#16A34A",
+        background: `${TYPE_COLORS[type] ?? "#6B9B6B"}18`,
+        color: TYPE_COLORS[type] ?? "#6B9B6B",
       }}
     >
       {TYPE_LABELS[type] ?? type}
@@ -49,14 +49,14 @@ const noteProseClass = [
   "[&_li]:my-0",
   "[&_strong]:font-semibold [&_strong]:text-[#F0F0F0]",
   "[&_em]:italic",
-  "[&_code]:bg-green-600/10 [&_code]:text-green-400 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.82em] [&_code]:font-mono",
+  "[&_code]:bg-[#6B9B6B]/10 [&_code]:text-[#6B9B6B] [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.82em] [&_code]:font-mono",
   "[&_pre]:bg-[#0A0A0A] [&_pre]:border [&_pre]:border-[#242424] [&_pre]:rounded [&_pre]:p-2 [&_pre]:overflow-x-auto [&_pre]:my-1",
   "[&_pre_code]:bg-transparent [&_pre_code]:text-[#E0E0E0] [&_pre_code]:p-0",
-  "[&_blockquote]:border-l-2 [&_blockquote]:border-green-600 [&_blockquote]:pl-3 [&_blockquote]:text-[#737373] [&_blockquote]:italic",
+  "[&_blockquote]:border-l-2 [&_blockquote]:border-[#6B9B6B] [&_blockquote]:pl-3 [&_blockquote]:text-[#737373] [&_blockquote]:italic",
   "[&_h1]:font-semibold [&_h1]:text-[#F0F0F0] [&_h1]:text-sm [&_h1]:my-1",
   "[&_h2]:font-semibold [&_h2]:text-[#F0F0F0] [&_h2]:text-xs [&_h2]:my-1",
   "[&_h3]:font-medium [&_h3]:text-[#F0F0F0] [&_h3]:text-xs [&_h3]:my-0.5",
-  "[&_a]:text-green-500 [&_a]:underline",
+  "[&_a]:text-[#6B9B6B] [&_a]:underline",
   "[&_hr]:border-[#242424] [&_hr]:my-2",
 ].join(" ");
 
@@ -257,7 +257,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search notes…"
-              className="w-full pl-7 pr-3 h-7 rounded-md text-xs border outline-none focus:border-green-600/60 transition-colors"
+              className="w-full pl-7 pr-3 h-7 rounded-md text-xs border outline-none focus:border-[#6B9B6B]/60 transition-colors"
               style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
             />
           </div>
@@ -297,7 +297,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder={`Note — page ${currentPage}`}
-              className="w-full mb-2 px-3 h-7 rounded-md text-xs border outline-none focus:border-green-600/60 transition-colors"
+              className="w-full mb-2 px-3 h-7 rounded-md text-xs border outline-none focus:border-[#6B9B6B]/60 transition-colors"
               style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
             />
             <textarea
@@ -305,7 +305,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
               onChange={(e) => setNewContent(e.target.value)}
               placeholder="Write your note… (Markdown supported)"
               rows={4}
-              className="w-full px-3 py-2 rounded-md text-xs border outline-none focus:border-green-600/60 transition-colors resize-none mb-2 font-mono"
+              className="w-full px-3 py-2 rounded-md text-xs border outline-none focus:border-[#6B9B6B]/60 transition-colors resize-none mb-2 font-mono"
               style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
               autoFocus
             />
@@ -321,7 +321,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
                 onClick={handleCreate}
                 disabled={saving}
                 className="px-3 h-7 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                style={{ background: "#16A34A", color: "#F0F0F0" }}
+                style={{ background: "#6B9B6B", color: "#F0F0F0" }}
               >
                 {saving && <Loader2 size={11} className="animate-spin" />}
                 Save note
@@ -348,14 +348,14 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
                       <input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="w-full mb-2 px-2 h-7 rounded-md text-xs border outline-none focus:border-green-600/60"
+                        className="w-full mb-2 px-2 h-7 rounded-md text-xs border outline-none focus:border-[#6B9B6B]/60"
                         style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
                       />
                       <textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                         rows={4}
-                        className="w-full px-2 py-1.5 rounded-md text-xs border outline-none focus:border-green-600/60 resize-none mb-2 font-mono"
+                        className="w-full px-2 py-1.5 rounded-md text-xs border outline-none focus:border-[#6B9B6B]/60 resize-none mb-2 font-mono"
                         style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
                         autoFocus
                       />
@@ -370,7 +370,7 @@ export default function NotesDrawer({ bookId, currentPage, open, onClose, bookTi
                         <button
                           onClick={() => void handleSaveEdit(note.id)}
                           disabled={saving}
-                          className="p-1 rounded text-green-400 disabled:opacity-50"
+                          className="p-1 rounded text-[#6B9B6B] disabled:opacity-50"
                           title="Save"
                         >
                           {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}

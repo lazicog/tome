@@ -77,9 +77,9 @@ function BookCard({
       <div className="mb-3">
         <div
           className="w-8 h-8 rounded-md flex items-center justify-center"
-          style={{ background: "rgba(99,102,241,0.12)" }}
+          style={{ background: "rgba(107,155,107,0.12)" }}
         >
-          <BookOpen size={15} className="text-green-500" />
+          <BookOpen size={15} className="text-[#6B9B6B]" />
         </div>
       </div>
 
@@ -261,8 +261,8 @@ export default function HomePage() {
       {/* Drag overlay */}
       {draggingOver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="absolute inset-4 rounded-2xl border-2 border-dashed border-green-600/60 bg-green-600/5" />
-          <span className="relative text-sm font-medium text-green-500">Drop PDF to upload</span>
+          <div className="absolute inset-4 rounded-2xl border-2 border-dashed border-[#6B9B6B]/60 bg-[#6B9B6B]/5" />
+          <span className="relative text-sm font-medium text-[#6B9B6B]">Drop PDF to upload</span>
         </div>
       )}
 
@@ -305,9 +305,9 @@ export default function HomePage() {
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(99,102,241,0.1)" }}
+              style={{ background: "rgba(107,155,107,0.1)" }}
             >
-              <BookOpen size={18} className="text-green-500" />
+              <BookOpen size={18} className="text-[#6B9B6B]" />
             </div>
             <div>
               <p className="text-sm font-medium" style={{ color: "#F0F0F0" }}>No books yet</p>
@@ -337,7 +337,7 @@ export default function HomePage() {
                     placeholder="Search by title…"
                     className="w-full pl-7 pr-3 h-8 rounded-lg text-xs border outline-none transition-colors"
                     style={{ background: "#151515", borderColor: "#303030", color: "#F0F0F0" }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(107,155,107,0.5)")}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "#303030")}
                   />
                 </div>
@@ -358,7 +358,7 @@ export default function HomePage() {
             {displayedBooks.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 gap-2">
                 <p className="text-sm" style={{ color: "#737373" }}>No books match &ldquo;{search}&rdquo;</p>
-                <button onClick={() => setSearch("")} className="text-xs underline" style={{ color: "#16A34A" }}>
+                <button onClick={() => setSearch("")} className="text-xs underline" style={{ color: "#6B9B6B" }}>
                   Clear search
                 </button>
               </div>

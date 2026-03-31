@@ -266,7 +266,7 @@ export default function PdfViewer({ url, title, goToPage, onPageChange, onNumPag
             onBlur={handleInputCommit}
             className="w-10 h-6 text-center rounded border text-xs outline-none transition-colors"
             style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(107,155,107,0.5)")}
           />
           <span className="text-xs" style={{ color: "#737373" }}>/ {numPages || "—"}</span>
         </div>
