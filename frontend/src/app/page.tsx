@@ -79,7 +79,7 @@ function BookCard({
           className="w-8 h-8 rounded-md flex items-center justify-center"
           style={{ background: "rgba(99,102,241,0.12)" }}
         >
-          <BookOpen size={15} className="text-indigo-400" />
+          <BookOpen size={15} className="text-green-500" />
         </div>
       </div>
 
@@ -261,8 +261,8 @@ export default function HomePage() {
       {/* Drag overlay */}
       {draggingOver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="absolute inset-4 rounded-2xl border-2 border-dashed border-indigo-500/60 bg-indigo-500/5" />
-          <span className="relative text-sm font-medium text-indigo-400">Drop PDF to upload</span>
+          <div className="absolute inset-4 rounded-2xl border-2 border-dashed border-green-600/60 bg-green-600/5" />
+          <span className="relative text-sm font-medium text-green-500">Drop PDF to upload</span>
         </div>
       )}
 
@@ -307,7 +307,7 @@ export default function HomePage() {
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: "rgba(99,102,241,0.1)" }}
             >
-              <BookOpen size={18} className="text-indigo-400" />
+              <BookOpen size={18} className="text-green-500" />
             </div>
             <div>
               <p className="text-sm font-medium" style={{ color: "#F0F0F0" }}>No books yet</p>
@@ -358,7 +358,7 @@ export default function HomePage() {
             {displayedBooks.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 gap-2">
                 <p className="text-sm" style={{ color: "#737373" }}>No books match &ldquo;{search}&rdquo;</p>
-                <button onClick={() => setSearch("")} className="text-xs underline" style={{ color: "#6366F1" }}>
+                <button onClick={() => setSearch("")} className="text-xs underline" style={{ color: "#16A34A" }}>
                   Clear search
                 </button>
               </div>

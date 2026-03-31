@@ -26,8 +26,8 @@ html, body {
   --color-text: #F0F0F0;
   --color-text-muted: #737373;
   --color-text-subtle: #404040;
-  --color-accent: #6366F1;
-  --color-accent-hover: #4F46E5;
+  --color-accent: #16A34A;
+  --color-accent-hover: #15803D;
   --color-success: #22C55E;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
@@ -69,7 +69,7 @@ html, body {
   --card-foreground: #F0F0F0;
   --popover: #1C1C1C;
   --popover-foreground: #F0F0F0;
-  --primary: #6366F1;
+  --primary: #16A34A;
   --primary-foreground: #F0F0F0;
   --secondary: #1C1C1C;
   --secondary-foreground: #F0F0F0;
@@ -80,7 +80,7 @@ html, body {
   --destructive: #EF4444;
   --border: #242424;
   --input: #1C1C1C;
-  --ring: #6366F1;
+  --ring: #16A34A;
   --radius: 0.5rem;
 }
 
@@ -91,7 +91,7 @@ html, body {
   --card-foreground: #F0F0F0;
   --popover: #1C1C1C;
   --popover-foreground: #F0F0F0;
-  --primary: #6366F1;
+  --primary: #16A34A;
   --primary-foreground: #F0F0F0;
   --secondary: #1C1C1C;
   --secondary-foreground: #F0F0F0;
@@ -102,7 +102,7 @@ html, body {
   --destructive: #EF4444;
   --border: #242424;
   --input: #1C1C1C;
-  --ring: #6366F1;
+  --ring: #16A34A;
 }
 
 @layer base {
@@ -141,7 +141,7 @@ html, body {
 .prose-chat ol { list-style-type: decimal; }
 .prose-chat li { margin: 0.12em 0; }
 .prose-chat code {
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(22, 163, 74, 0.12);
   color: #a5b4fc;
   padding: 0.15em 0.35em;
   border-radius: 0.25em;
@@ -164,7 +164,7 @@ html, body {
   line-height: 1.55;
 }
 .prose-chat blockquote {
-  border-left: 2px solid #6366F1;
+  border-left: 2px solid #16A34A;
   padding-left: 0.75em;
   margin: 0.5em 0;
   color: #737373;
@@ -172,8 +172,8 @@ html, body {
 }
 .prose-chat table { width: 100%; border-collapse: collapse; margin: 0.5em 0; font-size: 0.88em; }
 .prose-chat th, .prose-chat td { border: 1px solid #242424; padding: 0.35em 0.6em; text-align: left; }
-.prose-chat th { background: rgba(99, 102, 241, 0.08); color: #F0F0F0; font-weight: 600; }
-.prose-chat a { color: #6366F1; text-decoration: underline; text-underline-offset: 2px; }
+.prose-chat th { background: rgba(22, 163, 74, 0.08); color: #F0F0F0; font-weight: 600; }
+.prose-chat a { color: #16A34A; text-decoration: underline; text-underline-offset: 2px; }
 .prose-chat hr { border-color: #242424; margin: 0.75em 0; }
 
 /* ── Thin scrollbars ── */

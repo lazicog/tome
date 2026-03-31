@@ -73,9 +73,9 @@ function formatSessionLabel(s: Session): string {
 const TypingIndicator = memo(function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 py-1">
-      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-indigo-400" />
-      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-indigo-400" />
-      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-indigo-400" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-green-500" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-green-500" />
+      <span className="typing-dot w-1.5 h-1.5 rounded-full bg-green-500" />
     </div>
   );
 });
@@ -135,7 +135,7 @@ function SaveNoteDialog({
               className="h-8 rounded-lg border flex items-center px-3 gap-2"
               style={{ background: "#1C1C1C", borderColor: "#303030" }}
             >
-              <Loader2 size={12} className="animate-spin text-indigo-400" />
+              <Loader2 size={12} className="animate-spin text-green-500" />
               <span className="text-xs" style={{ color: "#737373" }}>Generating title…</span>
             </div>
           ) : (
@@ -146,7 +146,7 @@ function SaveNoteDialog({
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onConfirm(); } }}
               className="h-8 rounded-lg border px-3 text-sm outline-none transition-colors"
               style={{ background: "#1C1C1C", borderColor: "#303030", color: "#F0F0F0" }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(22,163,74,0.5)")}
               onBlur={(e) => (e.currentTarget.style.borderColor = "#303030")}
             />
           )}
@@ -171,7 +171,7 @@ function SaveNoteDialog({
           <button
             onClick={onConfirm}
             disabled={loading || !title.trim()}
-            className="px-3 h-7 rounded-md text-xs font-medium transition-colors disabled:opacity-40 bg-indigo-500 text-[#F0F0F0] hover:bg-indigo-600"
+            className="px-3 h-7 rounded-md text-xs font-medium transition-colors disabled:opacity-40 bg-green-600 text-[#F0F0F0] hover:bg-green-700"
           >
             Save note
           </button>
@@ -206,7 +206,7 @@ const MessageBubble = memo(function MessageBubble({
         className={cn("max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm min-w-0")}
         style={
           role === "user"
-            ? { background: "#6366F1", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
+            ? { background: "#16A34A", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
             : { background: "#151515", border: "1px solid #242424", color: "#F0F0F0", overflowWrap: "anywhere", wordBreak: "break-word" }
         }
       >
@@ -229,7 +229,7 @@ const MessageBubble = memo(function MessageBubble({
             {content && !sending && (
               <button
                 onClick={() => onSaveAsNote(content)}
-                className="mt-2 flex items-center gap-1 text-[10px] transition-colors text-[#404040] hover:text-indigo-400"
+                className="mt-2 flex items-center gap-1 text-[10px] transition-colors text-[#404040] hover:text-green-500"
               >
                 <Bookmark size={11} /> Save as note
               </button>
@@ -557,7 +557,7 @@ export default function BookPage() {
                   className="absolute top-0 left-0 w-full rounded-full transition-all duration-500"
                   style={{
                     height: numPages > 0 ? `${(currentPage / numPages) * 100}%` : "0%",
-                    background: "rgba(99,102,241,0.45)",
+                    background: "rgba(22,163,74,0.45)",
                   }}
                 />
               </div>
@@ -669,9 +669,9 @@ export default function BookPage() {
                   onClick={startNewSession}
                   className="flex items-center gap-1 px-2.5 h-7 rounded-md text-xs border transition-colors"
                   style={{
-                    borderColor: !activeSessionId ? "#6366F1" : "#303030",
-                    color: !activeSessionId ? "#6366F1" : "#737373",
-                    background: !activeSessionId ? "rgba(99,102,241,0.08)" : "transparent",
+                    borderColor: !activeSessionId ? "#16A34A" : "#303030",
+                    color: !activeSessionId ? "#16A34A" : "#737373",
+                    background: !activeSessionId ? "rgba(22,163,74,0.08)" : "transparent",
                   }}
                 >
                   <Plus size={11} /> New
@@ -683,9 +683,9 @@ export default function BookPage() {
                     onClick={() => void resumeSession(s)}
                     className="px-2.5 h-7 rounded-md text-xs border transition-colors"
                     style={{
-                      borderColor: activeSessionId === s.id ? "#6366F1" : "#303030",
-                      color: activeSessionId === s.id ? "#6366F1" : "#737373",
-                      background: activeSessionId === s.id ? "rgba(99,102,241,0.08)" : "transparent",
+                      borderColor: activeSessionId === s.id ? "#16A34A" : "#303030",
+                      color: activeSessionId === s.id ? "#16A34A" : "#737373",
+                      background: activeSessionId === s.id ? "rgba(22,163,74,0.08)" : "transparent",
                     }}
                   >
                     {formatSessionLabel(s)}
@@ -713,7 +713,7 @@ export default function BookPage() {
                       onClick={() => void sendMessage(s)}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs text-left transition-colors border-[#242424] text-[#737373] bg-[#151515] hover:border-[#303030] hover:text-[#F0F0F0]"
                     >
-                      <Sparkles size={11} className="text-indigo-400 flex-shrink-0" />
+                      <Sparkles size={11} className="text-green-500 flex-shrink-0" />
                       {s}
                     </button>
                   ))}
@@ -821,7 +821,7 @@ export default function BookPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[11px] block truncate mb-1 hover:underline"
-                          style={{ color: "#6366F1" }}
+                          style={{ color: "#16A34A" }}
                         >
                           {ws.url}
                         </a>
@@ -860,7 +860,7 @@ export default function BookPage() {
                 className="text-[10px] px-2 py-0.5 rounded-md border transition-colors"
                 style={
                   searchWholeBook
-                    ? { borderColor: "rgba(99,102,241,0.4)", color: "#6366F1", background: "rgba(99,102,241,0.08)" }
+                    ? { borderColor: "rgba(22,163,74,0.4)", color: "#16A34A", background: "rgba(22,163,74,0.08)" }
                     : { borderColor: "#303030", color: "#737373" }
                 }
               >
@@ -886,7 +886,7 @@ export default function BookPage() {
                 onClick={() => void sendMessage()}
                 disabled={sending || !input.trim()}
                 className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30"
-                style={{ background: "#6366F1" }}
+                style={{ background: "#16A34A" }}
               >
                 {sending
                   ? <Loader2 size={13} className="animate-spin text-white" />
