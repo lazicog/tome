@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     max_upload_size_mb: int = 100
-    top_k_chunks: int = 8
+    top_k_chunks: int = 12
     retrieval_prefetch_multiplier: int = 5
     retrieval_score_threshold: float = 0.15
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
