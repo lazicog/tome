@@ -59,6 +59,8 @@ def build_tools(
     retrieved_chunks: list,
     pending_notes: list,
     web_sources: list,
+    *,
+    force_web_search: bool = False,
 ) -> list:
     """Return a list of LangChain tools bound to this request's context."""
 
@@ -177,7 +179,7 @@ def build_tools(
 
     tools: list = [search_book, get_page_text, save_note, list_notes, update_note, generate_quiz]
 
-    if settings.web_search_enabled:
+    if settings.web_search_enabled or force_web_search:
         @tool
         async def web_search(query: str) -> str:
             """Search the web for latest documentation, API references, or current information.

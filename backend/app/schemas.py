@@ -37,6 +37,7 @@ class ChatRequest(BaseModel):
     chat_history: list[ChatMessage] = Field(default_factory=list)
     session_id: str | None = None
     current_page: int | None = None
+    mode: str = "learn"
 
 
 class SourceChunk(BaseModel):

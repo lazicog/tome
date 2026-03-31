@@ -116,6 +116,58 @@ WEB_RULES = """
 or user says "look up", "find docs", "latest version".
 - When web results differ from the book, point that out explicitly."""
 
+RESEARCH_SYSTEM_PROMPT = """\
+You are a research assistant helping a developer go deeper than the book.
+Your job: find what the book says, compare it to current practice, and surface differences.
+
+<current_reading>
+The user is on page {current_page}.
+{page_text_block}
+</current_reading>
+
+You have tools:
+- **search_book**: Retrieve content from the book. Always call this first.
+- **get_page_text**: Read a specific page verbatim.
+- **web_search**: Search the web for current documentation, papers, or community consensus.
+- **list_notes**: List existing notes for this book.
+- **save_note**: Save a note when the user explicitly asks.
+- **update_note**: Update an existing note by ID.
+
+Workflow:
+1. Call search_book to ground the answer in the text.
+2. Call web_search for current docs, blog posts, or papers on the same topic.
+3. Synthesise both into a structured response.
+
+Response format — use this structure for every substantive answer:
+
+---
+
+**Book says** (p.{{page}})
+What this book specifically claims, with page references.
+
+**Current practice**
+What practitioners actually do today, based on web sources. Cite URLs inline as [source](url).
+
+**Where they differ**
+Explicit comparison: what has changed, what the book oversimplifies, what holds up well.
+If the book and current practice agree, say so briefly.
+
+**Sources**
+- Book: p.{{page}} — "{{chapter}}"
+- Web: {{url}} — {{one-line summary}}
+
+---
+
+Rules:
+- Always call search_book before answering.
+- Always call web_search unless the question is purely about the current page text.
+- Cite every claim. Never state something without a source label (book page or URL).
+- Do not add quiz questions, "Key concepts to nail down", or pedagogical follow-ups.
+- Be direct and concise. No filler openers.
+- For simple factual lookups (page number, definition), a single paragraph without the full \
+  three-part structure is fine.
+"""
+
 
 @dataclass
 class EvalMetadata:
@@ -125,13 +177,19 @@ class EvalMetadata:
     tool_iterations: int = 0
 
 
-def _build_system_prompt(current_page: int | None, page_text: str) -> str:
+def _build_system_prompt(current_page: int | None, page_text: str, mode: str = "learn") -> str:
     if current_page and page_text:
         page_text_block = f"Page text:\n{page_text}"
     elif current_page:
         page_text_block = "(Page text not available)"
     else:
         page_text_block = "(No current page — user hasn't opened a specific page yet)"
+
+    if mode == "research":
+        return RESEARCH_SYSTEM_PROMPT.format(
+            current_page=current_page or "unknown",
+            page_text_block=page_text_block,
+        )
 
     web_search_line = WEB_SEARCH_LINE if settings.web_search_enabled else ""
     web_rules = WEB_RULES if settings.web_search_enabled else ""
@@ -160,6 +218,7 @@ async def stream_orchestrated_answer(
     message: str,
     history: list[ChatMessage],
     current_page: int | None = None,
+    mode: str = "learn",
 ) -> AsyncGenerator[str | EvalMetadata, None]:
     """
     Yields SSE strings (str) followed by a single EvalMetadata object.
@@ -171,7 +230,7 @@ async def stream_orchestrated_answer(
     if current_page:
         page_text = await get_page_text(book_id, current_page)
 
-    system_prompt = _build_system_prompt(current_page, page_text)
+    system_prompt = _build_system_prompt(current_page, page_text, mode)
 
     # Shared mutable state — tools append here
     retrieved_chunks: list[dict] = []
@@ -179,7 +238,12 @@ async def stream_orchestrated_answer(
     web_sources_list: list[dict] = []
     tools_called: list[str] = []
 
-    tools = build_tools(book_id, current_page, retrieved_chunks, pending_notes, web_sources_list)
+    tools = build_tools(
+        book_id, current_page, retrieved_chunks, pending_notes, web_sources_list,
+        force_web_search=(mode == "research"),
+    )
+    if mode == "research":
+        tools = [t for t in tools if t.name != "generate_quiz"]
 
     llm = get_chat_model_with_fallback()
     llm_with_tools = llm.bind_tools(tools)

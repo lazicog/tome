@@ -31,6 +31,7 @@ async def _session_aware_stream(
     history: list[ChatMessage],
     session_id: str,
     current_page: int | None = None,
+    mode: str = "learn",
 ) -> AsyncIterator[str]:
     from app.services.sessions import add_message
 
@@ -45,6 +46,7 @@ async def _session_aware_stream(
         message=message,
         history=history,
         current_page=current_page,
+        mode=mode,
     ):
         if isinstance(frame, EvalMetadata):
             eval_meta = frame
@@ -70,6 +72,7 @@ async def _plain_stream(
     message: str,
     history: list[ChatMessage],
     current_page: int | None = None,
+    mode: str = "learn",
 ) -> AsyncIterator[str]:
     collected_text = ""
     eval_meta: EvalMetadata | None = None
@@ -79,6 +82,7 @@ async def _plain_stream(
         message=message,
         history=history,
         current_page=current_page,
+        mode=mode,
     ):
         if isinstance(frame, EvalMetadata):
             eval_meta = frame
@@ -136,6 +140,8 @@ async def chat_with_book(book_id: str, payload: ChatRequest) -> StreamingRespons
 
     current_page = payload.current_page
 
+    mode = payload.mode
+
     if settings.use_sqlite_storage:
         from app.services.sessions import create_session
         session_id = payload.session_id or await create_session(book_id)
@@ -146,6 +152,7 @@ async def chat_with_book(book_id: str, payload: ChatRequest) -> StreamingRespons
             history=history,
             session_id=session_id,
             current_page=current_page,
+            mode=mode,
         )
     else:
         stream = _plain_stream(
@@ -153,6 +160,7 @@ async def chat_with_book(book_id: str, payload: ChatRequest) -> StreamingRespons
             message=payload.message,
             history=history,
             current_page=current_page,
+            mode=mode,
         )
 
     return StreamingResponse(stream, media_type="text/event-stream")
