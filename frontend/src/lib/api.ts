@@ -36,6 +36,21 @@ export type Note = {
 
 export type ChatMode = "learn" | "research";
 
+export type Model = {
+  id: string;
+  label: string;
+  provider: string;
+  is_default: boolean;
+};
+
+export async function listModels(): Promise<{ models: Model[]; default: string }> {
+  const res = await fetch(`${API}/models`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return (await res.json()) as { models: Model[]; default: string };
+}
+
 export type NoteCreate = {
   content: string;
   title?: string;

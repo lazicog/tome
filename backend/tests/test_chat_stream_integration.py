@@ -30,7 +30,7 @@ def test_chat_stream_emits_sse_contract(monkeypatch) -> None:
     async def fake_get_book(_: str):
         return SimpleNamespace(status=ProcessingStatus.ready)
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn"):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn", model_id=None):
         yield _sse_event("token", "Background first.")
         yield _sse_event(
             "sources",
@@ -72,7 +72,7 @@ def test_chat_stream_thinking_event_passes_through(monkeypatch) -> None:
     async def fake_get_book(_: str):
         return SimpleNamespace(status=ProcessingStatus.ready)
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn"):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn", model_id=None):
         yield _sse_event("thinking", "Searching book…")
         yield _sse_event("token", "Here is what I found.")
         yield _sse_event("sources", [])
@@ -151,7 +151,7 @@ def test_upload_to_ready_to_chat_flow(monkeypatch, tmp_path) -> None:
         existing = books[book_id]
         books[book_id] = existing.model_copy(update={"status": ProcessingStatus.ready, "chunks": 3})
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn"):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn", model_id=None):
         yield _sse_event("token", "Routed response.")
         yield _sse_event(
             "sources",
@@ -204,7 +204,7 @@ def test_chat_sends_current_page_when_provided(monkeypatch) -> None:
 
     captured: dict = {}
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn"):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn", model_id=None):
         captured["current_page"] = current_page
         yield _sse_event("token", "ok")
         yield _sse_event("sources", [])
@@ -230,7 +230,7 @@ def test_chat_omits_current_page_defaults_to_none(monkeypatch) -> None:
 
     captured: dict = {}
 
-    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn"):
+    async def fake_stream_routed_answer(*, book_id: str, message: str, history: list, current_page=None, mode="learn", model_id=None):
         captured["current_page"] = current_page
         yield _sse_event("token", "ok")
         yield _sse_event("sources", [])

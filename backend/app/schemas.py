@@ -38,6 +38,7 @@ class ChatRequest(BaseModel):
     session_id: str | None = None
     current_page: int | None = None
     mode: str = "learn"
+    model_id: str | None = None
 
 
 class SourceChunk(BaseModel):

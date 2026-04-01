@@ -30,15 +30,17 @@ import {
   getApiBase,
   getSessionMessages,
   listSessions,
+  listModels,
   createNote,
   suggestNoteTitle,
   type Book,
   type Session,
   type ChatMode,
+  type Model,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-type Message = { role: "user" | "assistant"; content: string; mode?: ChatMode };
+type Message = { role: "user" | "assistant"; content: string; mode?: ChatMode; modelId?: string };
 type WebSource = { url: string; snippet: string };
 type SourceChunk = {
   chunk_id: string;
@@ -82,30 +84,57 @@ const TypingIndicator = memo(function TypingIndicator() {
 });
 
 /* ── Mode selector ── */
-function ModeSelector({ mode, onChange }: { mode: ChatMode; onChange: (m: ChatMode) => void }) {
+function ModeSelector({
+  mode,
+  onChange,
+  models,
+  modelId,
+  onModelChange,
+}: {
+  mode: ChatMode;
+  onChange: (m: ChatMode) => void;
+  models: Model[];
+  modelId: string;
+  onModelChange: (id: string) => void;
+}) {
+  const effectiveId = modelId || models.find((m) => m.is_default)?.id || "";
   return (
-    <div className="flex items-center gap-1 px-4 py-2 border-b" style={{ borderColor: "#1C1C1C" }}>
-      {(["learn", "research"] as ChatMode[]).map((m) => (
+    <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "#1C1C1C" }}>
+      <div className="flex items-center gap-1">
+        {(["learn", "research"] as ChatMode[]).map((m) => (
+          <button
+            key={m}
+            onClick={() => onChange(m)}
+            className="flex items-center gap-1 px-2.5 h-6 rounded-md text-[11px] border transition-colors capitalize"
+            style={{
+              borderColor: mode === m ? "#6B9B6B" : "#303030",
+              color: mode === m ? "#6B9B6B" : "#737373",
+              background: mode === m ? "rgba(107,155,107,0.08)" : "transparent",
+            }}
+          >
+            {m === "learn" ? "Learn" : "Research"}
+          </button>
+        ))}
         <button
-          key={m}
-          onClick={() => onChange(m)}
-          className="flex items-center gap-1 px-2.5 h-6 rounded-md text-[11px] border transition-colors capitalize"
-          style={{
-            borderColor: mode === m ? "#6B9B6B" : "#303030",
-            color: mode === m ? "#6B9B6B" : "#737373",
-            background: mode === m ? "rgba(107,155,107,0.08)" : "transparent",
-          }}
+          disabled
+          title="Coming soon"
+          className="flex items-center gap-1 px-2.5 h-6 rounded-md text-[11px] border border-[#303030] text-[#404040] opacity-40 cursor-not-allowed"
         >
-          {m === "learn" ? "Learn" : "Research"}
+          Visualize
         </button>
-      ))}
-      <button
-        disabled
-        title="Coming soon"
-        className="flex items-center gap-1 px-2.5 h-6 rounded-md text-[11px] border border-[#303030] text-[#404040] opacity-40 cursor-not-allowed"
-      >
-        Visualize
-      </button>
+      </div>
+      {models.length > 0 && (
+        <select
+          value={effectiveId}
+          onChange={(e) => onModelChange(e.target.value)}
+          className="text-[11px] border rounded-md px-2 h-6 outline-none cursor-pointer transition-colors"
+          style={{ borderColor: "#303030", background: "#0E0E0E", color: "#737373" }}
+        >
+          {models.map((m) => (
+            <option key={m.id} value={m.id}>{m.label}</option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }
@@ -220,6 +249,7 @@ interface MessageBubbleProps {
   sending: boolean;
   onSaveAsNote: (content: string) => void;
   mode?: ChatMode;
+  modelLabel?: string;
 }
 
 const MessageBubble = memo(function MessageBubble({
@@ -231,6 +261,7 @@ const MessageBubble = memo(function MessageBubble({
   sending,
   onSaveAsNote,
   mode,
+  modelLabel,
 }: MessageBubbleProps) {
   return (
     <div className={cn("flex", role === "user" ? "justify-end" : "justify-start")}>
@@ -259,13 +290,21 @@ const MessageBubble = memo(function MessageBubble({
               <span style={{ color: "#737373" }}>…</span>
             )}
             {content && (
-              <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
                 {mode === "research" && (
                   <span
                     className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium"
                     style={{ background: "rgba(107,155,107,0.12)", color: "#6B9B6B" }}
                   >
                     Research
+                  </span>
+                )}
+                {modelLabel && (
+                  <span
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px]"
+                    style={{ background: "rgba(255,255,255,0.04)", color: "#404040" }}
+                  >
+                    {modelLabel}
                   </span>
                 )}
                 {!sending && (
@@ -313,6 +352,10 @@ export default function BookPage() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesRefresh, setNotesRefresh] = useState(0);
   const [mode, setMode] = useState<ChatMode>("learn");
+  const [availableModels, setAvailableModels] = useState<Model[]>([]);
+  const [modelId, setModelId] = useState<string>(() =>
+    typeof window !== "undefined" ? (localStorage.getItem("tome_model_id") ?? "") : ""
+  );
 
   const [searchWholeBook, setSearchWholeBook] = useState(false);
 
@@ -330,6 +373,18 @@ export default function BookPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { void getBook(bookId).then(setBook); }, [bookId]);
+
+  useEffect(() => {
+    listModels().then(({ models, default: def }) => {
+      setAvailableModels(models);
+      if (!localStorage.getItem("tome_model_id")) setModelId(def);
+    }).catch(() => {});
+  }, []);
+
+  const handleModelChange = (id: string) => {
+    setModelId(id);
+    localStorage.setItem("tome_model_id", id);
+  };
 
   /* Fix 5: smart scroll — instant during streaming, only if near bottom */
   useEffect(() => {
@@ -432,6 +487,7 @@ export default function BookPage() {
         message: userMsg.content,
         chat_history: activeSessionId ? [] : next.slice(0, -1),
         mode,
+        model_id: modelId || undefined,
       };
       if (activeSessionId) body.session_id = activeSessionId;
       if (!searchWholeBook) body.current_page = currentPage;
@@ -448,7 +504,7 @@ export default function BookPage() {
       const decoder = new TextDecoder();
       let buffer = "";
       let assistantText = "";
-      setMessages((prev) => [...prev, { role: "assistant", content: "", mode }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "", mode, modelId: modelId || undefined }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -688,8 +744,14 @@ export default function BookPage() {
         {/* Chat panel */}
         <div className={`flex flex-col min-h-0 transition-all duration-300 ease-in-out overflow-hidden ${chatOpen ? "flex-1 min-w-0" : "w-0 flex-shrink-0"}`}>
 
-          {/* Mode selector */}
-          <ModeSelector mode={mode} onChange={setMode} />
+          {/* Mode + model bar */}
+          <ModeSelector
+            mode={mode}
+            onChange={setMode}
+            models={availableModels}
+            modelId={modelId}
+            onModelChange={handleModelChange}
+          />
 
           {/* Sessions pill */}
           <div className="flex-shrink-0 border-b" style={{ borderColor: "#1C1C1C" }}>
@@ -777,6 +839,7 @@ export default function BookPage() {
                     role={m.role}
                     content={m.content}
                     isLast={last}
+                    modelLabel={m.modelId ? (availableModels.find((a) => a.id === m.modelId)?.label ?? undefined) : undefined}
                     thinkingLabel={last ? thinkingLabel : ""}
                     waitingForFirst={last ? waitingForFirst : false}
                     sending={last ? sending : false}

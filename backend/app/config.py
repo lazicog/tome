@@ -64,3 +64,11 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+AVAILABLE_MODELS = [
+    {"id": "gpt-5.4-mini",              "label": "GPT-5.4 mini",   "provider": "openai"},
+    {"id": "gpt-5.4",                   "label": "GPT-5.4",        "provider": "openai"},
+    {"id": "claude-haiku-4-5-20251001", "label": "Claude Haiku",   "provider": "anthropic"},
+    {"id": "claude-sonnet-4-6",         "label": "Claude Sonnet",  "provider": "anthropic"},
+    {"id": "claude-opus-4-6",           "label": "Claude Opus",    "provider": "anthropic"},
+]

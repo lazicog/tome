@@ -12,6 +12,7 @@ async def stream_routed_answer(
     history: list[ChatMessage],
     current_page: int | None = None,
     mode: str = "learn",
+    model_id: str | None = None,
 ) -> AsyncIterator[str | EvalMetadata]:
-    async for event in stream_orchestrated_answer(book_id, message, history, current_page, mode=mode):
+    async for event in stream_orchestrated_answer(book_id, message, history, current_page, mode=mode, model_id=model_id):
         yield event

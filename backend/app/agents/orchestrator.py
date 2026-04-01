@@ -16,10 +16,10 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 
 from app.agents.tools import build_tools, thinking_label
 from app.agents.tutor import _format_sources, _history_to_messages, _sse_event
-from app.config import settings
+from app.config import AVAILABLE_MODELS, settings
 from app.rag.page_extractor import get_page_text
 from app.schemas import ChatMessage
-from app.services.llm import get_chat_model_with_fallback
+from app.services.llm import get_chat_model, get_chat_model_with_fallback
 
 log = structlog.get_logger()
 
@@ -202,6 +202,16 @@ def _build_system_prompt(current_page: int | None, page_text: str, mode: str = "
     )
 
 
+def _resolve_model(model_id: str | None):
+    """Return an LLM instance for the given model_id, or the default with fallback."""
+    if not model_id:
+        return get_chat_model_with_fallback()
+    for m in AVAILABLE_MODELS:
+        if m["id"] == model_id:
+            return get_chat_model(provider=m["provider"], model=model_id)
+    return get_chat_model_with_fallback()
+
+
 def _extract_text(content) -> str:
     """Extract text from LLM response content (str or list of blocks)."""
     if isinstance(content, str):
@@ -219,6 +229,7 @@ async def stream_orchestrated_answer(
     history: list[ChatMessage],
     current_page: int | None = None,
     mode: str = "learn",
+    model_id: str | None = None,
 ) -> AsyncGenerator[str | EvalMetadata, None]:
     """
     Yields SSE strings (str) followed by a single EvalMetadata object.
@@ -245,7 +256,7 @@ async def stream_orchestrated_answer(
     if mode == "research":
         tools = [t for t in tools if t.name != "generate_quiz"]
 
-    llm = get_chat_model_with_fallback()
+    llm = _resolve_model(model_id)
     llm_with_tools = llm.bind_tools(tools)
     tool_map = {t.name: t for t in tools}
 
