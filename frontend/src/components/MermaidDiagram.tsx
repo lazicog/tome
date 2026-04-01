@@ -22,13 +22,19 @@ mermaid.initialize({
 
 let _counter = 0;
 
-export default function MermaidDiagram({ chart }: { chart: string }) {
+export default function MermaidDiagram({
+  chart,
+  isStreaming = false,
+}: {
+  chart: string;
+  isStreaming?: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const idRef = useRef(`mermaid-${++_counter}`);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (isStreaming || !containerRef.current) return;
     setError(null);
     mermaid
       .render(idRef.current, chart)
@@ -38,7 +44,18 @@ export default function MermaidDiagram({ chart }: { chart: string }) {
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : String(err));
       });
-  }, [chart]);
+  }, [chart, isStreaming]);
+
+  if (isStreaming) {
+    return (
+      <div
+        className="my-3 rounded-lg flex items-center gap-2 px-4 py-3"
+        style={{ background: "#0E0E0E", border: "1px solid #242424", color: "#404040" }}
+      >
+        <span className="text-xs">Generating diagram…</span>
+      </div>
+    );
+  }
 
   if (error) {
     return (

@@ -277,7 +277,12 @@ const MessageBubble = memo(function MessageBubble({
                     code({ className, children, ...props }) {
                       const language = /language-(\w+)/.exec(className ?? "")?.[1];
                       if (language === "mermaid") {
-                        return <MermaidDiagram chart={String(children).trim()} />;
+                        return (
+                          <MermaidDiagram
+                            chart={String(children).trim()}
+                            isStreaming={isLast && sending}
+                          />
+                        );
                       }
                       return <code className={className} {...props}>{children}</code>;
                     },
