@@ -9,6 +9,7 @@ At the start of the next session, say:
 `Read docs/SESSION-HANDOFF.md and continue from there.`
 
 Devlogs for context:
+- Modes, model picker, color pass: `docs/devlog/2026-04-02-modes-model-picker-color.md`
 - PDF viewer UX polish: `docs/devlog/2026-03-31-pdf-viewer-ux-polish.md`
 - Orchestrator overhaul + PDF viewer: `docs/devlog/2026-03-30-orchestrator-pdf-viewer.md`
 - Notes + RAG v2 + agent upgrade: `docs/devlog/2026-03-29-notes-rag-agent-upgrade.md`
@@ -43,61 +44,99 @@ Devlogs for context:
 
 ### Single Orchestrator Agent — COMPLETE (2026-03-30)
 - Replaced 5-agent LangGraph with single tool-calling orchestrator
-- Tools: search_book, get_page_text, save_note, generate_quiz, web_search (opt-in)
+- Tools: search_book, get_page_text, save_note, list_notes, update_note, generate_quiz, web_search (opt-in)
 - Current page text injected verbatim into system prompt
-- thinking SSE events during tool execution; web_sources SSE for web results
+- `thinking` SSE events during tool execution; `web_sources` SSE for web results
 - LLM-suggested note titles with editable dialog before saving
-- Deleted: router.py, example_gen.py, context_enricher.py, quiz_master.py, summarizer.py
-- Test count: 58 (all passing)
-- Devlog: docs/devlog/2026-03-30-orchestrator-pdf-viewer.md
+
+### Phoenix + Eval Pipeline — COMPLETE (2026-03-30)
+- `phoenix_enabled` / `phoenix_endpoint` in `config.py`
+- LangChain OTel instrumentation in `main.py` lifespan
+- `evals` table in SQLite database
+- `services/evals.py` CRUD
+- `agents/evaluator.py` LLM-as-judge (faithfulness + helpfulness scores)
+- `EvalMetadata` yielded from orchestrator after stream; `_fire_eval()` in `chat.py` fires background task
+- `GET /api/debug/evals` endpoint
 
 ### react-pdf PDF Viewer — COMPLETE (2026-03-30)
 - Replaced iframe with react-pdf v7 canvas renderer
 - Continuous scroll, IntersectionObserver page tracking, fit-to-width zoom
-- rAF-loop keyboard scroll (ArrowUp/Down), instant page jumps (ArrowLeft/Right)
-- Bottom toolbar: page nav, page number input, zoom controls
-- Text selection + annotation layers; / shortcut focuses chat input
+- rAF-loop keyboard scroll, instant page jumps, bottom toolbar
 
 ### PDF Viewer UX Polish — COMPLETE (2026-03-31)
-- Virtual page rendering — 9-page sliding window, estPageHeight placeholders; fixes 350+ page perf
-- Reading mode — chat-closed expands to full width, content centers at max-w-4xl (896px) with depth shadow
-- Left reading-progress rail — indigo fill + rotated page fraction label
-- Right rail large click zones — top 80% opens chat, bottom 20% opens notes (flex: 4 / flex: 1)
-- Chat toggle button on divider edge; browser scrollbar removed (html/body overflow: hidden)
-- Uniform zoom via 800px baseWidth cap; debounced ResizeObserver (320ms)
-- react-pdf CSS sentinels in globals.css; AbortException console filter
-- Replaced all JS hover handlers with Tailwind group/group-hover
-- Devlog: docs/devlog/2026-03-31-pdf-viewer-ux-polish.md
+- Virtual page rendering — 9-page sliding window, `estPageHeight` placeholders; fixes 350+ page perf
+- Reading mode — chat-closed expands to full width, centered at max-w-4xl with depth shadow
+- Left progress rail + right rail large click zones (chat 80% / notes 20%)
+- Chat toggle button on divider edge; browser scrollbar removed
 
-### Phoenix + Eval Pipeline — IN PROGRESS (spec written, implementation next)
-- Spec: docs/specs/2026-03-30-phoenix-eval-pipeline.md
-- No Docker needed — Phoenix runs as: python -m phoenix.server.main
-- Plan: Phoenix OTel instrumentation + LLM-as-judge evals stored in SQLite
+### Multi-Agent Modes (Learn / Research) — COMPLETE (2026-04-02)
+- Mode selector bar: `[ Learn ]  [ Research ]  [ Visualize (stub) ]`
+- Research mode: always-on web search, `RESEARCH_SYSTEM_PROMPT`, three-part output format (Book says / Current practice / Where they differ), no quiz tool
+- `mode` field on `ChatRequest`; forwarded through full call stack; "Research" badge on messages
+- 7 new tests in `tests/test_modes.py`
+
+### Per-Request Model Picker — COMPLETE (2026-04-02)
+- `AVAILABLE_MODELS` in `config.py`: GPT-5.4 mini, GPT-5.4, Claude Haiku, Claude Sonnet, Claude Opus
+- `GET /api/models` endpoint — filters by configured API keys
+- `model_id` on `ChatRequest`; `_resolve_model()` in orchestrator; forwarded through full call stack
+- Frontend: `<select>` in mode bar, `localStorage` persistence, model label badge on messages
+- 6 new tests in `tests/test_models_endpoint.py`
+
+### Unified Sage Accent — COMPLETE (2026-04-02)
+- Single `#6B9B6B` across all UI; fixed all leftover indigo tints
+- 1px fixed top accent bar in `layout.tsx`
+- Sage tint on source card icons and progress rail counter
 
 ---
 
-## Immediate next steps
+## Test suite
 
-Implement Phoenix + eval pipeline per spec at docs/specs/2026-03-30-phoenix-eval-pipeline.md:
+83 tests, all passing.
+Run: `cd backend && python -m pytest -q`
 
-1. Add phoenix_enabled / phoenix_endpoint to config.py
-2. Wire LangChainInstrumentor in main.py lifespan
-3. Add evals table to database.py
-4. Create services/evals.py (CRUD)
-5. Create agents/evaluator.py (LLM-as-judge)
-6. Extend orchestrator to return eval metadata
-7. Fire eval task in chat.py after stream
-8. Add /api/debug/evals endpoint
-9. Write tests
+| File | Tests |
+|---|---|
+| test_chat_stream_integration.py | 8 |
+| test_modes.py | 7 |
+| test_models_endpoint.py | 6 |
+| test_router.py | 5 |
+| test_session_chat_integration.py | 5 |
+| test_sessions.py | 6 |
+| test_notes.py | 10 |
+| test_sse_contract.py | 4 |
+| test_storage_db.py | 5 |
+| test_position_filter.py | 15 |
+| test_evals.py | ? |
+
+---
+
+## Immediate next steps (candidates — pick one)
+
+### Option A: Eval dashboard UI
+- The `/api/debug/evals` endpoint exists but there is no frontend for it.
+- A simple table showing faithfulness/helpfulness scores per session would close the loop on observability.
+
+### Option B: PDF text highlights as notes
+- The `notes` table has a `highlight` type; `NoteCreate.type` supports it.
+- No UI yet to select text in the PDF viewer and save it as a highlight note.
+- Would require a `mouseup` listener on the react-pdf text layer + a small inline save popover.
+
+### Option C: Book progress persistence
+- Current page is not saved between sessions; re-opening a book always starts at page 1.
+- Could store `last_page` in the `books` SQLite table and restore it on load.
+
+### Option D: Note export
+- Export all notes for a book as a single markdown file.
+- Simple `GET /api/books/{book_id}/notes/export` endpoint returning markdown.
 
 ---
 
 ## Run without Docker
 
-```
+```bash
 # Backend
 cd backend
-.venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 # Frontend
 cd frontend
@@ -105,7 +144,7 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 
 # Phoenix (when PHOENIX_ENABLED=true in .env)
 cd backend
-.venv/Scripts/python -m phoenix.server.main
+python -m phoenix.server.main
 # UI at http://localhost:6006
 ```
 
@@ -119,7 +158,8 @@ cd backend
 - Storage: SQLite via aiosqlite
 - Observability: Arize Phoenix (no Docker, local Python process)
 - Eval approach: LLM-as-judge (faithfulness + helpfulness scores in SQLite)
-- Web search: Tavily primary, DuckDuckGo fallback, opt-in via WEB_SEARCH_ENABLED=true
+- Web search: Tavily primary, DuckDuckGo fallback, opt-in via `WEB_SEARCH_ENABLED=true`; always-on in Research mode
+- Model selection: per-request via `model_id` in `ChatRequest`; `AVAILABLE_MODELS` filtered by configured keys
 - Solo workflow: Direct commits to master
 - GitHub operations: use `gh` CLI (not raw git remote commands)
 
@@ -127,29 +167,12 @@ cd backend
 
 ## Known gotchas
 
-- Port conflict: netstat -ano | findstr :8000 -> taskkill /PID <PID> /F
+- Port conflict: `netstat -ano | findstr :8000` → `taskkill /PID <PID> /F`
 - localhost vs 127.0.0.1 mismatch triggers CORS errors
-- PowerShell: use ; not && between commands
-- react-pdf v7 worker URL must be .min.js not .min.mjs
+- PowerShell: use `;` not `&&` between commands
+- react-pdf v7 worker URL must be `.min.js` not `.min.mjs`
 - Existing books need re-ingest after chunker changes
-- LLM tool-calling requires function-calling capable model (GPT-4o-mini, Claude 3.x)
-- WEB_SEARCH_ENABLED=false by default
-- Stale .next cache can cause webpack chunk errors — delete .next/ if mysterious module-not-found errors appear
-
----
-
-## Test suite
-
-58 tests, all passing.
-Run: cd backend && .venv/Scripts/python -m pytest -q
-
-| File | Tests |
-|---|---|
-| test_chat_stream_integration.py | 8 |
-| test_router.py | 5 |
-| test_session_chat_integration.py | 5 |
-| test_sessions.py | 6 |
-| test_notes.py | 10 |
-| test_sse_contract.py | 4 |
-| test_storage_db.py | 5 |
-| test_position_filter.py | 15 |
+- LLM tool-calling requires function-calling capable model (GPT-4o-mini, Claude 3.x+)
+- `WEB_SEARCH_ENABLED=false` by default — Research mode overrides this per-request
+- Stale `.next` cache can cause webpack chunk errors — delete `.next/` if mysterious module-not-found errors appear
+- Mock signatures for `stream_routed_answer` in integration tests must include all keyword args (`mode`, `model_id`) — update when adding new params

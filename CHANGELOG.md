@@ -7,6 +7,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Multi-agent modes — Learn / Research** (see `docs/devlog/2026-04-02-modes-model-picker-color.md`):
+  - Mode selector bar above sessions row: `[ Learn ]  [ Research ]  [ Visualize (stub) ]`
+  - **Research mode**: separate `RESEARCH_SYSTEM_PROMPT` with three-part output (Book says / Current practice / Where they differ); always-on web search regardless of `WEB_SEARCH_ENABLED` setting; `generate_quiz` tool excluded
+  - `force_web_search: bool = False` param on `build_tools()` — research overrides global web search flag
+  - `mode: str = "learn"` field on `ChatRequest`; forwarded through `chat.py → graph.py → orchestrator.py`
+  - `ChatMode = "learn" | "research"` type in `api.ts`; mode sent in every chat POST; "Research" pill badge on assistant messages
+  - `tests/test_modes.py` — 7 new tests
+
+- **Per-request model picker** (see `docs/devlog/2026-04-02-modes-model-picker-color.md`):
+  - `<select>` dropdown right-aligned in the mode bar; models fetched from `GET /api/models`
+  - `AVAILABLE_MODELS` list in `config.py`: GPT-5.4 mini, GPT-5.4, Claude Haiku, Claude Sonnet, Claude Opus
+  - `GET /api/models` endpoint filters by configured API keys — no broken options shown
+  - `model_id: str | None` on `ChatRequest`; `_resolve_model()` in orchestrator looks up provider and constructs the right LangChain instance; falls back to default chain if unknown
+  - Selection persisted to `localStorage` under `tome_model_id`; dim model label badge on each assistant message
+  - `tests/test_models_endpoint.py` — 6 new tests
+
+- **Unified sage accent pass** (see `docs/devlog/2026-04-02-modes-model-picker-color.md`):
+  - All colors migrated to a single muted sage (`#6B9B6B` / `rgba(107,155,107,…)`) — replaced previous two-color split and all leftover indigo `rgba(99,102,241,…)` tints
+  - 1px fixed top accent bar in `layout.tsx` (`rgba(107,155,107,0.35)`, `z-index: 9999`) — brand stripe on every page
+  - Sage tint on FileText icons in source cards and progress rail page counter
+
 - **PDF viewer UX polish** (see `docs/devlog/2026-03-31-pdf-viewer-ux-polish.md`):
   - Virtual page rendering — sliding window of 9 mounted pages (3 behind + 6 ahead); placeholder divs with `estPageHeight` for correct scrollbar; fixes 350+ page book performance
   - Reading mode — chat-closed state centers PDF content at `max-w-4xl` (896px) with dark margins and a depth shadow; `transition-all duration-300` animates the width change

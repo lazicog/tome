@@ -1,7 +1,7 @@
 # Spec: Multi-Agent Modes — Learn / Research / Visualize
 
 **Date:** 2026-03-31
-**Status:** Approved — ready to implement
+**Status:** Complete — implemented 2026-04-02
 **Scope:** Frontend mode selector UI + backend mode-aware orchestrator routing
 
 ---
