@@ -36,7 +36,7 @@ export default function MermaidDiagram({
   const [error, setError] = useState<string | null>(null);
   const [svg, setSvg] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [zoom, setZoom] = useState(1.5);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     if (isStreaming || !containerRef.current) return;
@@ -45,8 +45,12 @@ export default function MermaidDiagram({
     mermaid
       .render(renderId, chart)
       .then(({ svg: rendered }) => {
-        if (containerRef.current) containerRef.current.innerHTML = rendered;
-        setSvg(rendered);
+        // Make SVG fluid so it fills whatever container it's placed in
+        const fluid = rendered
+          .replace(/\bwidth="[^"]*"/, 'width="100%"')
+          .replace(/\bheight="[^"]*"/, 'height="auto"');
+        if (containerRef.current) containerRef.current.innerHTML = fluid;
+        setSvg(fluid);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : String(err));
@@ -56,7 +60,7 @@ export default function MermaidDiagram({
   // Escape to close modal
   useEffect(() => {
     if (!modalOpen) return;
-    setZoom(1.5);
+    setZoom(1);
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setModalOpen(false); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -133,8 +137,8 @@ export default function MermaidDiagram({
             style={{
               background: "#0E0E0E",
               borderColor: "#242424",
-              width: "min(92vw, 1000px)",
-              maxHeight: "90vh",
+              width: "96vw",
+              height: "95vh",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -163,7 +167,7 @@ export default function MermaidDiagram({
                   <ZoomIn size={14} />
                 </button>
                 <button
-                  onClick={() => setZoom(1.5)}
+                  onClick={() => setZoom(1)}
                   className="text-[10px] px-2 py-0.5 rounded border transition-colors"
                   style={{ borderColor: "#303030", color: "#737373" }}
                 >
@@ -184,7 +188,7 @@ export default function MermaidDiagram({
             {/* Scrollable diagram area */}
             <div
               ref={modalScrollRef}
-              className="flex-1 overflow-auto p-8"
+              className="flex-1 overflow-auto p-6"
               style={{ minHeight: 0 }}
             >
               <div
