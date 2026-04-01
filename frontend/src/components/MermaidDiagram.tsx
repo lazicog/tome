@@ -10,14 +10,14 @@ mermaid.initialize({
   theme: "dark",
   themeVariables: {
     darkMode: true,
-    background: "#151515",
+    background: "transparent",
     primaryColor: "rgba(107,155,107,0.18)",
     primaryTextColor: "#F0F0F0",
     primaryBorderColor: "#303030",
     lineColor: "#6B9B6B",
     secondaryColor: "#1C1C1C",
-    tertiaryColor: "#0E0E0E",
-    edgeLabelBackground: "#151515",
+    tertiaryColor: "transparent",
+    edgeLabelBackground: "transparent",
     nodeTextColor: "#F0F0F0",
   },
 });
@@ -36,7 +36,7 @@ export default function MermaidDiagram({
   const [error, setError] = useState<string | null>(null);
   const [svg, setSvg] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1.5);
 
   useEffect(() => {
     if (isStreaming || !containerRef.current) return;
@@ -56,7 +56,7 @@ export default function MermaidDiagram({
   // Escape to close modal
   useEffect(() => {
     if (!modalOpen) return;
-    setZoom(1);
+    setZoom(1.5);
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setModalOpen(false); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -104,7 +104,7 @@ export default function MermaidDiagram({
       {/* Thumbnail — click to open modal */}
       <div
         className="relative my-3 group cursor-zoom-in overflow-x-auto rounded-lg"
-        style={{ background: "#0E0E0E", border: "1px solid #242424", padding: "1rem" }}
+        style={{ border: "1px solid #242424", padding: "1rem" }}
         onClick={() => svg && setModalOpen(true)}
       >
         <div ref={containerRef} />
@@ -163,7 +163,7 @@ export default function MermaidDiagram({
                   <ZoomIn size={14} />
                 </button>
                 <button
-                  onClick={() => setZoom(1)}
+                  onClick={() => setZoom(1.5)}
                   className="text-[10px] px-2 py-0.5 rounded border transition-colors"
                   style={{ borderColor: "#303030", color: "#737373" }}
                 >
