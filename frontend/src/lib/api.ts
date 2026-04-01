@@ -34,7 +34,7 @@ export type Note = {
   updated_at: string;
 };
 
-export type ChatMode = "learn" | "research";
+export type ChatMode = "learn" | "research" | "visualize";
 
 export type Model = {
   id: string;

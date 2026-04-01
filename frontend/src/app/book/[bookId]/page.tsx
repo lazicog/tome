@@ -23,6 +23,7 @@ import {
 
 import dynamic from "next/dynamic";
 const PdfViewer = dynamic(() => import("@/components/PdfViewer"), { ssr: false });
+const MermaidDiagram = dynamic(() => import("@/components/MermaidDiagram"), { ssr: false });
 import NotesDrawer from "@/components/NotesDrawer";
 import {
   getBook,
@@ -101,7 +102,7 @@ function ModeSelector({
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "#1C1C1C" }}>
       <div className="flex items-center gap-1">
-        {(["learn", "research"] as ChatMode[]).map((m) => (
+        {(["learn", "research", "visualize"] as ChatMode[]).map((m) => (
           <button
             key={m}
             onClick={() => onChange(m)}
@@ -112,16 +113,9 @@ function ModeSelector({
               background: mode === m ? "rgba(107,155,107,0.08)" : "transparent",
             }}
           >
-            {m === "learn" ? "Learn" : "Research"}
+            {m === "learn" ? "Learn" : m === "research" ? "Research" : "Visualize"}
           </button>
         ))}
-        <button
-          disabled
-          title="Coming soon"
-          className="flex items-center gap-1 px-2.5 h-6 rounded-md text-[11px] border border-[#303030] text-[#404040] opacity-40 cursor-not-allowed"
-        >
-          Visualize
-        </button>
       </div>
       {models.length > 0 && (
         <select
@@ -277,7 +271,20 @@ const MessageBubble = memo(function MessageBubble({
           <>
             {content ? (
               <div className="prose-chat max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ className, children, ...props }) {
+                      const language = /language-(\w+)/.exec(className ?? "")?.[1];
+                      if (language === "mermaid") {
+                        return <MermaidDiagram chart={String(children).trim()} />;
+                      }
+                      return <code className={className} {...props}>{children}</code>;
+                    },
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
               </div>
             ) : isLast && waitingForFirst ? (
               <div className="flex flex-col gap-1">
@@ -297,6 +304,14 @@ const MessageBubble = memo(function MessageBubble({
                     style={{ background: "rgba(107,155,107,0.12)", color: "#6B9B6B" }}
                   >
                     Research
+                  </span>
+                )}
+                {mode === "visualize" && (
+                  <span
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium"
+                    style={{ background: "rgba(107,155,107,0.12)", color: "#6B9B6B" }}
+                  >
+                    Visualize
                   </span>
                 )}
                 {modelLabel && (
