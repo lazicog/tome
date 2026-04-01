@@ -31,13 +31,15 @@ export default function MermaidDiagram({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const idRef = useRef(`mermaid-${++_counter}`);
 
   useEffect(() => {
     if (isStreaming || !containerRef.current) return;
+    // Fresh unique ID on every render call — Mermaid injects the ID into the
+    // SVG it generates, so reusing an ID that's already in the DOM silently fails.
+    const renderId = `mermaid-${++_counter}`;
     setError(null);
     mermaid
-      .render(idRef.current, chart)
+      .render(renderId, chart)
       .then(({ svg }) => {
         if (containerRef.current) containerRef.current.innerHTML = svg;
       })
