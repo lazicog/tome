@@ -11,14 +11,18 @@ mermaid.initialize({
   themeVariables: {
     darkMode: true,
     background: "transparent",
-    primaryColor: "rgba(107,155,107,0.18)",
+    primaryColor: "rgba(107,155,107,0.22)",
     primaryTextColor: "#F0F0F0",
-    primaryBorderColor: "#303030",
+    primaryBorderColor: "#6B9B6B",
     lineColor: "#6B9B6B",
-    secondaryColor: "#1C1C1C",
+    secondaryColor: "rgba(107,155,107,0.10)",
     tertiaryColor: "transparent",
     edgeLabelBackground: "transparent",
     nodeTextColor: "#F0F0F0",
+    clusterBkg: "rgba(107,155,107,0.08)",
+    titleColor: "#A8C8A8",
+    activationBorderColor: "#6B9B6B",
+    activationBkgColor: "rgba(107,155,107,0.15)",
   },
 });
 
@@ -135,8 +139,10 @@ export default function MermaidDiagram({
           <div
             className="relative z-10 flex flex-col rounded-xl border shadow-2xl"
             style={{
-              background: "#0E0E0E",
-              borderColor: "#242424",
+              background: "rgba(10, 10, 10, 0.82)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              borderColor: "rgba(107,155,107,0.18)",
               width: "96vw",
               height: "95vh",
             }}
@@ -145,7 +151,7 @@ export default function MermaidDiagram({
             {/* Toolbar */}
             <div
               className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0"
-              style={{ borderColor: "#1C1C1C" }}
+              style={{ borderColor: "rgba(107,155,107,0.12)" }}
             >
               <div className="flex items-center gap-2">
                 <button
@@ -189,13 +195,14 @@ export default function MermaidDiagram({
             <div
               ref={modalScrollRef}
               className="flex-1 overflow-auto p-6"
-              style={{ minHeight: 0 }}
+              style={{ minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
             >
               <div
                 style={{
                   transform: `scale(${zoom})`,
-                  transformOrigin: "top center",
+                  transformOrigin: "center center",
                   transition: "transform 0.15s ease",
+                  width: "100%",
                 }}
                 dangerouslySetInnerHTML={{ __html: svg }}
               />
